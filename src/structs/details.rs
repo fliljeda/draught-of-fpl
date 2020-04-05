@@ -1,7 +1,4 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -33,7 +30,7 @@ pub struct LeagueInfo {
     pub max_entries: u32,
     pub ko_rounds: u32,
     pub draft_dt: String,
-    pub draft_status : String,
+    pub draft_status: String,
     pub admin_entry: u32,
     pub name: String,
     pub min_entries: u32,
@@ -52,7 +49,7 @@ pub struct LeagueEntry {
     pub id: u32,
     pub waiver_pick: u32,
     pub player_last_name: String,
-    pub entry_name: String
+    pub entry_name: String,
 }
 
 #[allow(dead_code)]

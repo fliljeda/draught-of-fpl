@@ -1,7 +1,4 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
 
@@ -59,12 +56,12 @@ pub struct Element {
     pub goals_scored: i32,
     pub yellow_cards: i32,
     pub minutes: i32,
-    pub event_points: i32
+    pub event_points: i32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ElementType {
-    pub id:	i32,
+    pub id: i32,
     pub singular_name: String,
     pub singular_name_short: String,
     pub plural_name: String,
@@ -81,7 +78,6 @@ pub struct ElementStats {
     pub sort: String,
 }
 
-
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Events {
     pub current: i32,
@@ -89,12 +85,11 @@ pub struct Events {
     pub next: i32,
 }
 
-
 #[derive(Deserialize, Serialize, Debug)]
 pub struct EventData {
     //pub average_entry_score: null
     pub deadline_time: String,
-    pub id:	i32,
+    pub id: i32,
     pub name: String,
     pub finished: bool,
     //pub highest_scoring_entry:	null
@@ -109,7 +104,7 @@ pub struct Fixture {
     pub finished: bool,
     pub finished_provisional: bool,
     pub kickoff_time: String,
-    pub minutes:	i32,
+    pub minutes: i32,
     pub provisional_start_time: bool,
     //pub team_a_score:	null
     //pub team_h_score:	null
@@ -141,8 +136,8 @@ pub struct League {
     pub private_max: i32,
     pub public_draft_delay_minutes: i32,
     pub public_draft_tz_default: String,
-    pub public_entry_sizes:	Vec<i32>,
-    pub public_max:	i32,
+    pub public_entry_sizes: Vec<i32>,
+    pub public_max: i32,
 }
 
 #[allow(non_snake_case)]
@@ -203,7 +198,7 @@ pub struct Transactions {
     pub trade_veto_hours: i32,
     pub waivers_before_start_min_hours: i32,
     pub waivers_before_deadline_hours: i32,
-    pub waivers_before_deadline_hours_event: HashMap<i32, i32>
+    pub waivers_before_deadline_hours_event: HashMap<i32, i32>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

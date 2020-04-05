@@ -7,10 +7,9 @@ use std::io::prelude::*;
 const FPL_API_BASE: &str = "https://draft.premierleague.com/api/";
 const LOCAL_API_BASE: &str = "/home/fl/db/api";
 
-
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub enum ClientError{
+pub enum ClientError {
     ReqwestError(String),
     InternalError(String),
     HttpError(String),
@@ -24,7 +23,7 @@ impl fmt::Display for ClientError {
             ClientError::ReqwestError(msg) => write!(f, "Reqwest lib error: {}", msg),
             ClientError::HttpError(msg) => write!(f, "HTTP error: {}", msg),
             ClientError::LocalError(msg) => write!(f, "Local error: {}", msg),
-        }      
+        }
     }
 }
 
@@ -34,7 +33,6 @@ impl error::Error for ClientError {
     }
 }
 
-
 pub struct Client {
     client: ReqwestClient,
     local: bool,
@@ -42,15 +40,19 @@ pub struct Client {
 
 /* Creates and returns a new fpl client */
 pub fn new() -> Result<Client, ClientError> {
-    let client_builder = ReqwestClient::builder()
-        .timeout(std::time::Duration::from_secs(10));
+    let client_builder = ReqwestClient::builder().timeout(std::time::Duration::from_secs(10));
 
     let reqwest_client = match client_builder.build() {
         Ok(c) => c,
-        Err(e) => return Err(ClientError::ReqwestError(String::from(format!("Could not create client with reason: {}", e)))),
+        Err(e) => {
+            return Err(ClientError::ReqwestError(String::from(format!(
+                "Could not create client with reason: {}",
+                e
+            ))))
+        }
     };
 
-    let client = Client{
+    let client = Client {
         client: reqwest_client,
         local: false,
     };
@@ -59,7 +61,7 @@ pub fn new() -> Result<Client, ClientError> {
 }
 
 impl Client {
-    fn get(&self, path: &str) -> Result<String, ClientError> {  
+    fn get(&self, path: &str) -> Result<String, ClientError> {
         if self.is_local() {
             self.fetch_local(path)
         } else {
@@ -70,12 +72,22 @@ impl Client {
     fn fetch_local(&self, path: &str) -> Result<String, ClientError> {
         let mut file = match File::open(path) {
             Ok(f) => f,
-            Err(e) => return Err(ClientError::LocalError(format!("Error opening file with path {} {}", path, e))),
+            Err(e) => {
+                return Err(ClientError::LocalError(format!(
+                    "Error opening file with path {} {}",
+                    path, e
+                )))
+            }
         };
         let mut contents = String::new();
         match file.read_to_string(&mut contents) {
-            Ok(_) => {},
-            Err(e) => return Err(ClientError::LocalError(format!("Error reading file contents into string: {}", e))),
+            Ok(_) => {}
+            Err(e) => {
+                return Err(ClientError::LocalError(format!(
+                    "Error reading file contents into string: {}",
+                    e
+                )))
+            }
         }
 
         Ok(contents)
@@ -84,19 +96,27 @@ impl Client {
     fn fetch_web(&self, path: &str) -> Result<String, ClientError> {
         let mut resp = match self.client.get(path).send() {
             Ok(r) => r,
-            Err(e) => return Err(ClientError::ReqwestError(String::from(format!("Error with sending request: {}", e)))),
+            Err(e) => {
+                return Err(ClientError::ReqwestError(String::from(format!(
+                    "Error with sending request: {}",
+                    e
+                ))))
+            }
         };
 
         verify_error_code(resp.status())?;
 
-        
         let body = match resp.text() {
             Ok(b) => b,
-            Err(e) => return Err(ClientError::ReqwestError(String::from(format!("Error with processing request: {}", e)))),
+            Err(e) => {
+                return Err(ClientError::ReqwestError(String::from(format!(
+                    "Error with processing request: {}",
+                    e
+                ))))
+            }
         };
-                
-        Ok(body)
 
+        Ok(body)
     }
 
     pub fn is_local(&self) -> bool {
@@ -108,17 +128,21 @@ impl Client {
     }
 
     fn get_base_url(&self) -> &str {
-        if self.is_local() { 
-            LOCAL_API_BASE 
-        } else { 
-            FPL_API_BASE 
+        if self.is_local() {
+            LOCAL_API_BASE
+        } else {
+            FPL_API_BASE
         }
     }
 
     /* Fetches from /league/xxx/details endpoint */
     #[allow(dead_code)]
     pub fn get_league_details(&self, league_code: &str) -> Result<String, ClientError> {
-        let url = format!("{api_base}league/{league}/details", api_base = self.get_base_url(), league = league_code);
+        let url = format!(
+            "{api_base}league/{league}/details",
+            api_base = self.get_base_url(),
+            league = league_code
+        );
         self.get(&url)
     }
 
@@ -132,29 +156,44 @@ impl Client {
     #[allow(dead_code)]
     /* Fetches from /entry/{team_code}/event/{gw} endpoint */
     pub fn get_team_gw(&self, team: u32, gw: u32) -> Result<String, ClientError> {
-        let url = format!("{api_base}/entry/{team}/event/{gw}", api_base = self.get_base_url(), team = team, gw = gw);
+        let url = format!(
+            "{api_base}/entry/{team}/event/{gw}",
+            api_base = self.get_base_url(),
+            team = team,
+            gw = gw
+        );
         self.get(&url)
     }
 
     #[allow(dead_code)]
     /* Fetches from /entry/{team_code}/public endpoint */
     pub fn get_team_info(&self, team: u32) -> Result<String, ClientError> {
-        let url = format!("{api_base}/entry/{team}/public", api_base = self.get_base_url(), team = team);
+        let url = format!(
+            "{api_base}/entry/{team}/public",
+            api_base = self.get_base_url(),
+            team = team
+        );
         self.get(&url)
     }
-
 
     #[allow(dead_code)]
     /* Fetches from event/{gw}/live endpoint */
     pub fn get_gw_points_live(&self, gw: u32) -> Result<String, ClientError> {
-        let url = format!("{api_base}/event/{gw}/live", api_base = self.get_base_url(), gw = gw);
+        let url = format!(
+            "{api_base}/event/{gw}/live",
+            api_base = self.get_base_url(),
+            gw = gw
+        );
         self.get(&url)
     }
 
     #[allow(dead_code)]
     /* Fetches from /bootstrap-static endpoint */
     pub fn get_static(&self) -> Result<String, ClientError> {
-        let url = format!("{api_base}/bootstrap-static", api_base = self.get_base_url());
+        let url = format!(
+            "{api_base}/bootstrap-static",
+            api_base = self.get_base_url()
+        );
         self.get(&url)
     }
 }
@@ -163,6 +202,9 @@ impl Client {
 fn verify_error_code(code: reqwest::StatusCode) -> Result<(), ClientError> {
     match code.is_success() {
         true => Ok(()),
-        false => Err(ClientError::HttpError(String::from(format!("Received error code: {}", code)))),
+        false => Err(ClientError::HttpError(String::from(format!(
+            "Received error code: {}",
+            code
+        )))),
     }
 }

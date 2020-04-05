@@ -1,11 +1,7 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_json;
 pub use serde_json::value::Value;
 use std::collections::HashMap;
-
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Live {
@@ -15,10 +11,10 @@ pub struct Live {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Element {
-    //IMPORTAN TO NOTE ABOUT EXPLAIN IS THAT THE INSIDE VEC IS JUST DUMMY ELEMENT TO HOLD 
+    //IMPORTAN TO NOTE ABOUT EXPLAIN IS THAT THE INSIDE VEC IS JUST DUMMY ELEMENT TO HOLD
     //EITHER A VECTOR OF POINTSOURCES AND WHAT TEAM THEY FACED WHEN ON INDEX 0 AND 1 RESPECTIVELY
     //SO: explain[x][0] is array of point sources, explain[x][1] is the team they faced
-    pub explain: Vec<Vec<ElementFixture>>, 
+    pub explain: Vec<Vec<ElementFixture>>,
     pub stats: Stats,
 }
 
@@ -26,7 +22,7 @@ pub struct Element {
 #[serde(untagged)]
 pub enum ElementFixture {
     Points(Vec<Point>),
-    OpposingTeam(i32)
+    OpposingTeam(i32),
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -36,7 +32,6 @@ pub struct Point {
     value: i32,
     stat: String,
 }
-
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Stats {
@@ -81,7 +76,7 @@ pub struct Fixture {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct FixtureStats {
-    pub s: String, //type of stat (eg. red_cards, saves, bps, bonus)
+    pub s: String,           //type of stat (eg. red_cards, saves, bps, bonus)
     pub h: Vec<FixtureStat>, //home
     pub a: Vec<FixtureStat>, //away
 }
