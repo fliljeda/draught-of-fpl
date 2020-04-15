@@ -1,11 +1,12 @@
 use crate::storage::Table;
-use std::sync::{Arc, Mutex};
+use std::sync::{atomic::Ordering, Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn test(table: Arc<Mutex<Table>>) {
+pub fn test(table: Arc<Table>) {
     loop {
         sleep(Duration::from_millis(200));
-        table.lock().unwrap().entries[0].points += 1;
+        let x = table.entries[0].points.load(Ordering::Relaxed);
+        table.entries[0].points.store(x + 1, Ordering::Relaxed);
     }
 }

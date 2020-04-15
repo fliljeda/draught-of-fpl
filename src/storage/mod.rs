@@ -1,6 +1,7 @@
 use crate::client;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::sync::atomic::AtomicI32;
 
 // Module to fetch and update the storage.
 
@@ -12,7 +13,7 @@ pub struct Table {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Entry {
     pub name: String,
-    pub points: i32,
+    pub points: AtomicI32,
 }
 
 #[allow(dead_code)]

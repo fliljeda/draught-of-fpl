@@ -9,35 +9,35 @@ mod storage;
 mod structs;
 
 use rocket::State;
-use std::sync::{Arc, Mutex};
+use std::sync::{atomic::AtomicI32, Arc};
 use std::thread::spawn;
 use storage::Entry;
 use storage::Table;
 
 pub fn main() {
     // Atomic reference counter because the mutex exists in main, fetcher and rocket.
-    let mut table = Arc::new(Mutex::new(Table {
+    let mut table = Arc::new(Table {
         entries: vec![
             Entry {
                 name: String::from("Alltid Redo"),
-                points: 1,
+                points: AtomicI32::new(1),
             },
             Entry {
                 name: String::from("Lag 2"),
-                points: 2,
+                points: AtomicI32::new(2),
             },
         ],
-    }));
+    });
 
-    spawn(move || fetcher::test(Arc::clone(&table)));
+    let table_clone = Arc::clone(&table);
+    spawn(move || fetcher::test(table_clone));
 
     let rocket = rocket::ignite()
         .mount("/fpl", routes![get_player])
         .mount("/table", routes![get_table])
-        .manage(table)
-        .launch();
+        .manage(table);
 
-    println!("Hej");
+    rocket.launch();
 }
 
 #[get("/player/<id>")]
@@ -46,6 +46,6 @@ fn get_player(id: u32) -> String {
 }
 
 #[get("/")]
-fn get_table(table: State<Arc<Mutex<Table>>>) -> String {
-    format!("{:?}", table.lock().unwrap())
+fn get_table(table: State<Arc<Table>>) -> String {
+    format!("{:?}", table)
 }
