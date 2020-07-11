@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
-use serde_json;
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct StaticInfo {
     pub elements: Vec<Element>,
     pub element_types: Vec<ElementType>,
@@ -13,7 +12,7 @@ pub struct StaticInfo {
     pub teams: Vec<Team>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Element {
     pub web_name: String,
     pub goals_conceded: i32,
@@ -59,7 +58,7 @@ pub struct Element {
     pub event_points: i32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ElementType {
     pub id: i32,
     pub singular_name: String,
@@ -68,7 +67,7 @@ pub struct ElementType {
     pub plural_name_short: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ElementStats {
     pub name: String,
     pub label: String,
@@ -78,14 +77,14 @@ pub struct ElementStats {
     pub sort: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Events {
     pub current: i32,
     pub data: Vec<EventData>,
     pub next: i32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EventData {
     //pub average_entry_score: null
     pub deadline_time: String,
@@ -96,7 +95,7 @@ pub struct EventData {
     pub waivers_time: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Fixture {
     pub id: i32,
     pub started: bool,
@@ -113,7 +112,7 @@ pub struct Fixture {
     pub team_h: i32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Settings {
     pub league: League,
     pub scoring: Scoring,
@@ -122,7 +121,7 @@ pub struct Settings {
     pub ui: Ui,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct League {
     pub default_entries: i32,
     pub draft_reminder_hours: Vec<i32>,
@@ -141,7 +140,7 @@ pub struct League {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Scoring {
     pub long_play_limit: i32,
     pub short_play: i32,
@@ -171,7 +170,7 @@ pub struct Scoring {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Squad {
     pub size: i32,
     pub select_GKP: i32,
@@ -191,7 +190,7 @@ pub struct Squad {
     pub captains_disabled: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Transactions {
     pub new_element_locked_hours: i32,
     pub trade_veto_minimum: i32,
@@ -201,21 +200,16 @@ pub struct Transactions {
     pub waivers_before_deadline_hours_event: HashMap<i32, i32>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Ui {
     //special_shirt_exclusions: 	[]
     pub use_special_shirts: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Team {
     pub code: i32,
     pub id: i32,
     pub name: String,
     pub short_name: String,
-}
-
-#[allow(dead_code)]
-pub fn from_str(data: &str) -> Result<StaticInfo, serde_json::Error> {
-    serde_json::from_str(data)
 }

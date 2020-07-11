@@ -1,22 +1,27 @@
-use crate::client;
-use serde::{Deserialize, Serialize};
-use serde_json;
-use std::sync::atomic::AtomicI32;
+
+use crate::structs;
+use std::collections::HashMap;
 
 // Module to fetch and update the storage.
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Debug)]
 pub struct Table {
     pub entries: Vec<Entry>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Debug)]
 pub struct Entry {
     pub name: String,
-    pub points: AtomicI32,
+    pub points: i32,
 }
 
-#[allow(dead_code)]
-pub fn from_str(data: &str) -> Result<Table, serde_json::Error> {
-    serde_json::from_str(data)
+#[derive(Debug)]
+pub struct FplEndpoints {
+    pub details: structs::Details,
+    pub game: structs::Game,
+    pub live: structs::Live,
+    pub static_info: structs::StaticInfo,
+    pub teams_gw: HashMap<u32, structs::teamgw::TeamGw>,
+    pub teams_info: HashMap<u32, structs::teaminfo::TeamInfo>,
 }
+

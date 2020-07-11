@@ -1,14 +1,14 @@
-use serde::{Deserialize, Serialize};
-use serde_json;
 
-#[derive(Deserialize, Serialize, Debug)]
+use serde::{Serialize,Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Details {
     pub standings: Vec<TeamStandings>,
     pub league: LeagueInfo,
     pub league_entries: Vec<LeagueEntry>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TeamStandings {
     pub total: u32,
     pub event_total: u32,
@@ -18,7 +18,7 @@ pub struct TeamStandings {
     pub rank_sort: u32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LeagueInfo {
     pub closed: bool,
     pub make_code_public: bool,
@@ -40,7 +40,7 @@ pub struct LeagueInfo {
     pub id: u32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LeagueEntry {
     pub player_first_name: String,
     pub joined_time: String,
@@ -52,7 +52,3 @@ pub struct LeagueEntry {
     pub entry_name: String,
 }
 
-#[allow(dead_code)]
-pub fn from_str(data: &str) -> Result<Details, serde_json::Error> {
-    serde_json::from_str(data)
-}

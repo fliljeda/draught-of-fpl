@@ -1,12 +1,11 @@
-use serde::{Deserialize, Serialize};
-use serde_json;
+use serde::{Serialize, Deserialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TeamInfo {
     pub entry: Entry,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Entry {
     pub event_points: i32,
     //pub favourite_team	null
@@ -24,7 +23,3 @@ pub struct Entry {
     pub transactions_total: i32,
 }
 
-#[allow(dead_code)]
-pub fn from_str(data: &str) -> Result<TeamInfo, serde_json::Error> {
-    serde_json::from_str(data)
-}

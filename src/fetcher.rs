@@ -1,12 +1,19 @@
-use crate::storage::Table;
-use std::sync::{atomic::Ordering, Arc, Mutex};
-use std::thread::sleep;
-use std::time::Duration;
+use std::sync::{Arc, RwLock};
+use log::warn;
 
-pub fn test(table: Arc<Table>) {
-    loop {
-        sleep(Duration::from_millis(200));
-        let x = table.entries[0].points.load(Ordering::Relaxed);
-        table.entries[0].points.store(x + 1, Ordering::Relaxed);
-    }
+use crate::client::Client;
+use crate::storage::FplEndpoints;
+
+// Continuously updates the endpoints
+#[allow(dead_code)]
+pub fn endpoint_cache_fetcher(endpoints_lock: Arc<RwLock<FplEndpoints>>, _client: &Client) {
+    match endpoints_lock.write() {
+        Ok(mut _t) => {
+            info!("Grabbed the lock")
+        }
+        Err(e) => {
+            warn!("Could not grab write lock for table: {}", e);
+        }
+    };
 }
+

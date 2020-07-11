@@ -1,12 +1,11 @@
-use serde::{Deserialize, Serialize};
-use serde_json;
+use serde::{Serialize,Deserialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TeamGw {
     pub picks: Vec<Pick>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Pick {
     pub element: i32,
     pub position: i32,
@@ -15,7 +14,3 @@ pub struct Pick {
     pub multiplier: i32,
 }
 
-#[allow(dead_code)]
-pub fn from_str(data: &str) -> Result<TeamGw, serde_json::Error> {
-    serde_json::from_str(data)
-}

@@ -3,39 +3,40 @@
 #[macro_use]
 extern crate rocket;
 
+use std::sync::{Arc, RwLock};
+
+use log::{info, warn};
+use rocket::State;
+
+use storage::Entry;
+use storage::Table;
+
 mod client;
 mod fetcher;
 mod storage;
 mod structs;
 
-use rocket::State;
-use std::sync::{atomic::AtomicI32, Arc};
-use std::thread::spawn;
-use storage::Entry;
-use storage::Table;
 
 pub fn main() {
-    // Atomic reference counter because the mutex exists in main, fetcher and rocket.
-    let mut table = Arc::new(Table {
+    let _table_lock = Arc::new(RwLock::new(Table {
         entries: vec![
             Entry {
                 name: String::from("Alltid Redo"),
-                points: AtomicI32::new(1),
+                points: 1,
             },
             Entry {
                 name: String::from("Lag 2"),
-                points: AtomicI32::new(2),
+                points: 2
             },
         ],
-    });
+    }));
 
-    let table_clone = Arc::clone(&table);
-    spawn(move || fetcher::test(table_clone));
+    let _table_clone = Arc::clone(&_table_lock);
 
     let rocket = rocket::ignite()
         .mount("/fpl", routes![get_player])
         .mount("/table", routes![get_table])
-        .manage(table);
+        .manage(_table_lock);
 
     rocket.launch();
 }
@@ -46,6 +47,15 @@ fn get_player(id: u32) -> String {
 }
 
 #[get("/")]
-fn get_table(table: State<Arc<Table>>) -> String {
-    format!("{:?}", table)
+fn get_table(table_lock: State<Arc<RwLock<Table>>>) -> String {
+    match table_lock.read() {
+        Ok(table) => {
+            info!("Successful request to table!");
+            format!("{:?}", table)
+        },
+        Err(e) => {
+            warn!("Could not grab read lock for table: {}", e);
+            String::from("Error accessing the table resource for reading")
+        }
+    }
 }

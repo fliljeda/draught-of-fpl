@@ -1,15 +1,13 @@
-use serde::{Deserialize, Serialize};
-use serde_json;
-pub use serde_json::value::Value;
 use std::collections::HashMap;
+use serde::{Serialize,Deserialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Live {
     pub elements: HashMap<String, Element>,
     pub fixtures: Vec<Fixture>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Element {
     //IMPORTAN TO NOTE ABOUT EXPLAIN IS THAT THE INSIDE VEC IS JUST DUMMY ELEMENT TO HOLD
     //EITHER A VECTOR OF POINTSOURCES AND WHAT TEAM THEY FACED WHEN ON INDEX 0 AND 1 RESPECTIVELY
@@ -18,14 +16,14 @@ pub struct Element {
     pub stats: Stats,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ElementFixture {
     Points(Vec<Point>),
     OpposingTeam(i32),
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Point {
     name: String,
     points: i32,
@@ -33,7 +31,7 @@ pub struct Point {
     stat: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Stats {
     pub minutes: i32,
     pub goals_scored: i32,
@@ -56,7 +54,7 @@ pub struct Stats {
     pub in_dreamteam: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Fixture {
     pub id: i32,
     pub started: bool,
@@ -74,20 +72,15 @@ pub struct Fixture {
     pub team_h: i32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FixtureStats {
     pub s: String,           //type of stat (eg. red_cards, saves, bps, bonus)
     pub h: Vec<FixtureStat>, //home
     pub a: Vec<FixtureStat>, //away
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FixtureStat {
     element: i32,
     value: i32,
-}
-
-#[allow(dead_code)]
-pub fn from_str(data: &str) -> Result<Live, serde_json::Error> {
-    serde_json::from_str(data)
 }

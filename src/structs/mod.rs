@@ -4,4 +4,12 @@ pub mod live;
 pub mod staticinfo;
 pub mod teamgw;
 pub mod teaminfo;
-// REPRESENTS THE JSON RECEIVED FROM https://draft.premierleague.com/api/ ENDPOINTS
+
+
+pub use details::Details;
+pub use game::Game;
+pub use live::Live;
+pub use staticinfo::StaticInfo;
+pub use teamgw::TeamGw;
+pub use teaminfo::TeamInfo;
+
