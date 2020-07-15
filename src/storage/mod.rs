@@ -1,6 +1,7 @@
 
 use crate::structs;
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 // Module to fetch and update the storage.
 
@@ -17,11 +18,15 @@ pub struct Entry {
 
 #[derive(Debug)]
 pub struct FplEndpoints {
-    pub details: structs::Details,
-    pub game: structs::Game,
-    pub live: structs::Live,
-    pub static_info: structs::StaticInfo,
-    pub teams_gw: HashMap<u32, structs::teamgw::TeamGw>,
-    pub teams_info: HashMap<u32, structs::teaminfo::TeamInfo>,
+    pub details: Option<structs::Details>,
+    pub game: Option<structs::Game>,
+    pub live: Option<structs::Live>,
+    pub static_info: Option<structs::StaticInfo>,
+    pub teams_gw: HashMap<u32, Option<structs::TeamGw>>,
+    pub teams_info: HashMap<u32, Option<structs::TeamInfo>>,
 }
 
+#[derive(Debug)]
+pub struct CalculatedValues {
+    pub table: Arc<RwLock<Table>>,
+}

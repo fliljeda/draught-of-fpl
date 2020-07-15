@@ -17,7 +17,8 @@ mod storage;
 mod structs;
 
 
-pub fn main() {
+#[tokio::main]
+pub async fn main() {
     let _table_lock = Arc::new(RwLock::new(Table {
         entries: vec![
             Entry {

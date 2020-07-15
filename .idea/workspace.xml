@@ -41,23 +41,10 @@
       <recent name="$PROJECT_DIR$/tests" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo Command.Test client::tests::local_test_client">
+  <component name="RunManager" selected="Cargo Command.Test client::tests::local_test_multiple_team_info">
     <configuration name="Test client::tests::local_endpoint_test_static_info" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="channel" value="DEFAULT" />
       <option name="command" value="test --package draught-of-fpl --bin draught-of-fpl client::tests::local_endpoint_test_static_info -- --exact" />
-      <option name="allFeatures" value="false" />
-      <option name="nocapture" value="false" />
-      <option name="emulateTerminal" value="false" />
-      <option name="backtrace" value="SHORT" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test client::tests::local_endpoint_test_team_gw" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="channel" value="DEFAULT" />
-      <option name="command" value="test --package draught-of-fpl --bin draught-of-fpl client::tests::local_endpoint_test_team_gw -- --exact" />
       <option name="allFeatures" value="false" />
       <option name="nocapture" value="false" />
       <option name="emulateTerminal" value="false" />
@@ -81,19 +68,6 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test client::tests::local_endpoint_test_teaminfo" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="channel" value="DEFAULT" />
-      <option name="command" value="test --package draught-of-fpl --bin draught-of-fpl client::tests::local_endpoint_test_teaminfo -- --exact" />
-      <option name="allFeatures" value="false" />
-      <option name="nocapture" value="false" />
-      <option name="emulateTerminal" value="false" />
-      <option name="backtrace" value="SHORT" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="Test client::tests::local_test_client" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="channel" value="DEFAULT" />
       <option name="command" value="test --package draught-of-fpl --bin draught-of-fpl client::tests::local_test_client -- --exact" />
@@ -107,13 +81,39 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test client::tests::local_test_multiple_team_gw" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="test --package draught-of-fpl --bin draught-of-fpl client::tests::local_test_multiple_team_gw -- --exact" />
+      <option name="allFeatures" value="false" />
+      <option name="nocapture" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test client::tests::local_test_multiple_team_info" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="test --package draught-of-fpl --bin draught-of-fpl client::tests::local_test_multiple_team_info -- --exact" />
+      <option name="allFeatures" value="false" />
+      <option name="nocapture" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo Command.Test client::tests::local_test_multiple_team_info" />
+        <item itemvalue="Cargo Command.Test client::tests::local_test_multiple_team_gw" />
         <item itemvalue="Cargo Command.Test client::tests::local_test_client" />
         <item itemvalue="Cargo Command.Test client::tests::local_endpoint_test_static_info" />
         <item itemvalue="Cargo Command.Test client::tests::local_endpoint_test_team_info" />
-        <item itemvalue="Cargo Command.Test client::tests::local_endpoint_test_team_gw" />
-        <item itemvalue="Cargo Command.Test client::tests::local_endpoint_test_teaminfo" />
       </list>
     </recent_temporary>
   </component>
@@ -136,38 +136,38 @@
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
     <state x="665" y="289" width="624" height="526" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/45.27.1875.1053@45.27.1875.1053" timestamp="1592039291026" />
-    <state width="1381" height="164" key="GridCell.Tab.0.bottom" timestamp="1594488354718">
+    <state width="1829" height="266" key="GridCell.Tab.0.bottom" timestamp="1594738677243">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
-    <state width="1381" height="164" key="GridCell.Tab.0.bottom/45.27.1875.1053@45.27.1875.1053" timestamp="1594488354718" />
-    <state width="1381" height="164" key="GridCell.Tab.0.center" timestamp="1594488354706">
+    <state width="1829" height="266" key="GridCell.Tab.0.bottom/45.27.1875.1053@45.27.1875.1053" timestamp="1594738677243" />
+    <state width="1829" height="266" key="GridCell.Tab.0.center" timestamp="1594738677240">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
-    <state width="1381" height="164" key="GridCell.Tab.0.center/45.27.1875.1053@45.27.1875.1053" timestamp="1594488354706" />
-    <state width="1381" height="164" key="GridCell.Tab.0.left" timestamp="1594488354705">
+    <state width="1829" height="266" key="GridCell.Tab.0.center/45.27.1875.1053@45.27.1875.1053" timestamp="1594738677240" />
+    <state width="1829" height="266" key="GridCell.Tab.0.left" timestamp="1594738677240">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
-    <state width="1381" height="164" key="GridCell.Tab.0.left/45.27.1875.1053@45.27.1875.1053" timestamp="1594488354705" />
-    <state width="1381" height="164" key="GridCell.Tab.0.right" timestamp="1594488354718">
+    <state width="1829" height="266" key="GridCell.Tab.0.left/45.27.1875.1053@45.27.1875.1053" timestamp="1594738677240" />
+    <state width="1829" height="266" key="GridCell.Tab.0.right" timestamp="1594738677242">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
-    <state width="1381" height="164" key="GridCell.Tab.0.right/45.27.1875.1053@45.27.1875.1053" timestamp="1594488354718" />
+    <state width="1829" height="266" key="GridCell.Tab.0.right/45.27.1875.1053@45.27.1875.1053" timestamp="1594738677242" />
     <state x="471" y="187" width="1024" height="845" key="SettingsEditor" timestamp="1592905605085">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
     <state x="471" y="187" width="1024" height="845" key="SettingsEditor/45.27.1875.1053@45.27.1875.1053" timestamp="1592905605085" />
-    <state x="761" y="245" width="432" height="615" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1594477602645">
+    <state x="761" y="245" width="432" height="615" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1594726825550">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
-    <state x="761" y="245" width="432" height="615" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/45.27.1875.1053@45.27.1875.1053" timestamp="1594477602645" />
+    <state x="761" y="245" width="432" height="615" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/45.27.1875.1053@45.27.1875.1053" timestamp="1594726825550" />
     <state x="631" y="271" width="700" height="530" key="recent.locations.popup" timestamp="1593092474208">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
     <state x="631" y="271" width="700" height="530" key="recent.locations.popup/45.27.1875.1053@45.27.1875.1053" timestamp="1593092474207" />
-    <state x="646" y="253" key="run.anything.popup" timestamp="1593969858892">
+    <state x="646" y="253" key="run.anything.popup" timestamp="1594722484630">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>
-    <state x="646" y="253" key="run.anything.popup/45.27.1875.1053@45.27.1875.1053" timestamp="1593969858892" />
+    <state x="646" y="253" key="run.anything.popup/45.27.1875.1053@45.27.1875.1053" timestamp="1594722484630" />
     <state x="645" y="257" width="672" height="678" key="search.everywhere.popup" timestamp="1594480809182">
       <screen x="45" y="27" width="1875" height="1053" />
     </state>

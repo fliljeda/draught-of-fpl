@@ -5,10 +5,12 @@ use std::fs::File;
 use std::io::prelude::*;
 use crate::structs::{Game, Details, Live, TeamGw, TeamInfo, StaticInfo};
 use serde::de;
+use std::collections::HashMap;
+use futures::future::join_all;
 
 
 const FPL_API_BASE: &str = "https://draft.premierleague.com/api/";
-const LOCAL_API_BASE: &str = "/home/fl/db2/api";
+const LOCAL_API_BASE: &str = "/fpl/api";
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -38,6 +40,7 @@ impl error::Error for ClientError {
     }
 }
 
+// TODO: Change to enum Local(), Web()
 pub struct Client {
     #[allow(dead_code)]
     http_client: ReqwestClient,
@@ -45,16 +48,12 @@ pub struct Client {
 }
 
 fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError> where T: de::Deserialize<'a> {
-    let o: T = match serde_json::from_str(&s){
-        Ok(g) => g,
-        Err(e) => {
-            return Err(ClientError::ReqwestError(String::from(format!(
-                "Error with processing request: {}",
-                e
-            ))))
-        }
-    };
-    Ok(o)
+    serde_json::from_str(&s).or_else(|e| {
+        return Err(ClientError::ReqwestError(String::from(format!(
+            "Error with processing request: {}",
+            e
+        ))))
+    })
 }
 
 
@@ -203,6 +202,23 @@ impl Client {
     }
 
     #[allow(dead_code)]
+    pub async fn get_multiple_teams_gw(&self, teams: &Vec<u32>, gw: &u32) -> HashMap<u32, Result<TeamGw, ClientError>> {
+        let futures= teams.iter().map(|team_id| {
+            self.get_team_gw(&team_id, &gw)
+        }).collect::<Vec<_>>();
+
+        let team_gws: Vec<Result<TeamGw, ClientError>> = join_all(futures).await;
+
+        let mut m: HashMap<u32, Result<TeamGw, ClientError>> = HashMap::new();
+
+        // Assumes same ordering of teams and team_gws which futures::join_all guarantees
+        team_gws.into_iter().enumerate().for_each(|(i, team_gw)| {
+            m.insert(teams[i], team_gw);
+        });
+        m
+    }
+
+    #[allow(dead_code)]
     /* Fetches from /entry/{team_code}/public endpoint */
     pub async fn get_team_info(&self, team: &u32) -> Result<TeamInfo, ClientError> {
         let url = format!(
@@ -213,6 +229,23 @@ impl Client {
         let team_info = self.get(&url).await?;
         let team_info = deserialize_endpoint_struct(&team_info)?;
         Ok(team_info)
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_multiple_teams_info(&self, teams: &Vec<u32>) -> HashMap<u32, Result<TeamInfo, ClientError>> {
+        let futures= teams.iter().map(|team_id| {
+            self.get_team_info(&team_id)
+        }).collect::<Vec<_>>();
+
+        let team_infos: Vec<Result<TeamInfo, ClientError>> = join_all(futures).await;
+
+        let mut m: HashMap<u32, Result<TeamInfo, ClientError>> = HashMap::new();
+
+        // Assumes same ordering of teams and team_gws which futures::join_all guarantees
+        team_infos.into_iter().enumerate().for_each(|(i, team_info)| {
+            m.insert(teams[i], team_info);
+        });
+        m
     }
 
     #[allow(dead_code)]
@@ -374,4 +407,57 @@ mod tests {
 
         Ok(())
     }
+
+
+    #[tokio::test]
+    async fn local_test_multiple_team_gw() -> Result<(), ClientError> {
+        let client = Client::new_local().unwrap();
+        let game = client.get_game().await?;
+        let gw = game.current_event;
+
+        let details = client.get_league_details(&305).await?;
+        let teams: Vec<u32> = details.league_entries.iter()
+            .map(|entry| entry.entry_id)
+            .collect();
+
+        let team_gws = client.get_multiple_teams_gw(&teams, &gw).await;
+
+        for x in team_gws.into_iter() {
+           match x {
+               (u, Err(e)) => {
+                    eprintln!("Team error {} returned with error", u);
+                    return Err(e);
+               },
+               _ => ()
+           }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn local_test_multiple_team_info() -> Result<(), ClientError> {
+        let client = Client::new_local().unwrap();
+        let game = client.get_game().await?;
+
+        let details = client.get_league_details(&305).await?;
+        let teams: Vec<u32> = details.league_entries.iter()
+            .map(|entry| entry.entry_id)
+            .collect();
+
+        let team_gws = client.get_multiple_teams_info(&teams).await;
+
+        for x in team_gws.into_iter() {
+            match x {
+                (u, Err(e)) => {
+                    eprintln!("Team error {} returned with error", u);
+                    return Err(e);
+                },
+                _ => ()
+            }
+        }
+
+        Ok(())
+    }
+
 }
