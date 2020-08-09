@@ -4,7 +4,7 @@ use serde::{Serialize,Deserialize};
 pub struct Game {
     pub current_event: u32,
     pub current_event_finished: bool,
-    pub next_event: u32,
+    pub next_event: Option<u32>,
     pub processing_status: String,
     pub trades_time_for_approval: bool,
     pub waivers_processed: bool,

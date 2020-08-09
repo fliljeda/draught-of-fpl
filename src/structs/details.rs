@@ -47,7 +47,7 @@ pub struct LeagueEntry {
     pub short_name: String,
     pub entry_id: u32,
     pub id: u32,
-    pub waiver_pick: u32,
+    pub waiver_pick: Option<u32>,
     pub player_last_name: String,
     pub entry_name: String,
 }

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use futures::future::join_all;
 
 
-const FPL_API_BASE: &str = "https://draft.premierleague.com/api/";
+const FPL_API_BASE: &str = "https://draft.premierleague.com/api";
 const LOCAL_API_BASE: &str = "/fpl/api";
 
 #[allow(dead_code)]
@@ -50,7 +50,7 @@ pub struct Client {
 fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError> where T: de::Deserialize<'a> {
     serde_json::from_str(&s).or_else(|e| {
         return Err(ClientError::ReqwestError(String::from(format!(
-            "Error with processing request: {}",
+            "Found Error: {}",
             e
         ))))
     })
@@ -136,6 +136,7 @@ impl Client {
     }
 
     async fn fetch_web(&self, path: &str) -> Result<String, ClientError> {
+        println!("Fetching {}", path);
         let resp =  match self.http_client.get(path).send().await {
             Ok(r) => r,
             Err(e) => {

@@ -81,7 +81,7 @@ pub struct ElementStats {
 pub struct Events {
     pub current: i32,
     pub data: Vec<EventData>,
-    pub next: i32,
+    pub next: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
