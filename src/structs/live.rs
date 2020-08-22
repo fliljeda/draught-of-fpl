@@ -25,62 +25,62 @@ pub enum ElementFixture {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Point {
-    name: String,
-    points: i32,
-    value: i32,
-    stat: String,
+    name: Option<String>,
+    points: Option<i32>,
+    value: Option<i32>,
+    stat: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Stats {
-    pub minutes: i32,
-    pub goals_scored: i32,
-    pub assists: i32,
-    pub clean_sheets: i32,
-    pub goals_conceded: i32,
-    pub own_goals: i32,
-    pub penalties_saved: i32,
-    pub penalties_missed: i32,
-    pub yellow_cards: i32,
-    pub red_cards: i32,
-    pub saves: i32,
-    pub bonus: i32,
-    pub bps: i32,
-    pub influence: f64,
-    pub creativity: f64,
-    pub threat: f64,
-    pub ict_index: f64,
-    pub total_points: i32,
-    pub in_dreamteam: bool,
+    pub minutes: Option<i32>,
+    pub goals_scored: Option<i32>,
+    pub assists: Option<i32>,
+    pub clean_sheets: Option<i32>,
+    pub goals_conceded: Option<i32>,
+    pub own_goals: Option<i32>,
+    pub penalties_saved: Option<i32>,
+    pub penalties_missed: Option<i32>,
+    pub yellow_cards: Option<i32>,
+    pub red_cards: Option<i32>,
+    pub saves: Option<i32>,
+    pub bonus: Option<i32>,
+    pub bps: Option<i32>,
+    pub influence: Option<f64>,
+    pub creativity: Option<f64>,
+    pub threat: Option<f64>,
+    pub ict_index: Option<f64>,
+    pub total_points: Option<i32>,
+    pub in_dreamteam: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Fixture {
-    pub id: i32,
-    pub started: bool,
+    pub id: Option<i32>,
+    pub started: Option<bool>,
     pub stats: Vec<FixtureStats>,
-    pub code: i32,
-    pub finished: bool,
-    pub finished_provisional: bool,
-    pub kickoff_time: String,
-    pub minutes: i32,
-    pub provisional_start_time: bool,
-    pub team_a_score: i32,
-    pub team_h_score: i32,
-    pub event: i32,
-    pub team_a: i32,
-    pub team_h: i32,
+    pub code: Option<i32>,
+    pub finished: Option<bool>,
+    pub finished_provisional: Option<bool>,
+    pub kickoff_time: Option<String>,
+    pub minutes: Option<i32>,
+    pub provisional_start_time: Option<bool>,
+    pub team_a_score: Option<i32>,
+    pub team_h_score: Option<i32>,
+    pub event: Option<i32>,
+    pub team_a: Option<i32>,
+    pub team_h: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FixtureStats {
-    pub s: String,           //type of stat (eg. red_cards, saves, bps, bonus)
+    pub s: Option<String>,           //type of stat (eg. red_cards, saves, bps, bonus)
     pub h: Vec<FixtureStat>, //home
     pub a: Vec<FixtureStat>, //away
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FixtureStat {
-    element: i32,
-    value: i32,
+    element: Option<i32>,
+    value: Option<i32>,
 }

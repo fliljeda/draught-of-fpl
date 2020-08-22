@@ -414,7 +414,7 @@ mod tests {
     async fn local_test_multiple_team_gw() -> Result<(), ClientError> {
         let client = Client::new_local().unwrap();
         let game = client.get_game().await?;
-        let gw = game.current_event;
+        let gw = game.current_event.unwrap_or(1);
 
         let details = client.get_league_details(&305).await?;
         let teams: Vec<u32> = details.league_entries.iter()

@@ -1,5 +1,6 @@
 use std::{thread, time};
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use futures::join;
@@ -7,7 +8,6 @@ use futures::join;
 use crate::client::{Client, ClientError};
 use crate::storage::FplEndpoints;
 use crate::structs::*;
-use std::ops::Deref;
 
 #[allow(dead_code)]
 pub fn endpoint_cache_fetcher(endpoints_lock: Arc<RwLock<FplEndpoints>>, client: Client, context_lock: Arc<RwLock<crate::AppContext>>) {
@@ -15,7 +15,7 @@ pub fn endpoint_cache_fetcher(endpoints_lock: Arc<RwLock<FplEndpoints>>, client:
         let app_context = match context_lock.read() {
             Ok(c) => {
                 (*c.deref()).clone()
-            },
+            }
             Err(_) => {
                 continue;
             }
@@ -56,7 +56,12 @@ fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpoi
         let gw: u32 = context.gw;
         let teams = context.team_ids;
 
-        let (game, details) = fetch_game_and_details_with_retries(client, &league_code).await;
+        //let (game, details) = fetch_game_and_details_with_retries(client, &league_code).await;
+        let retries = 15;
+        let retry_delay_ms = 10;
+        let game = fetch_game_with_retries(client, retries, retry_delay_ms);
+        let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
+        let (game, details) = join!(game, details);
 
 
         // Start http_calls
@@ -93,68 +98,44 @@ fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpoi
     })
 }
 
-// Fetches the crucial endpoints from FPL Api with retry
-pub async fn fetch_game_and_details_with_retries(client: &Client, league_code: &u32) -> (Option<Game>, Option<Details>) {
-    let mut retries = 15;
-    let retry_wait_ms: u64 = 1000;
+async fn fetch_game_with_retries(client: &Client, mut retries: i32, retry_wait_ms: u64) -> Option<Game> {
+    let mut err: Option<ClientError> = None;
     while retries > 0 {
-        let details = client.get_league_details(&league_code);
-        let game = client.get_game();
-        let (game, details): (Result<Game, ClientError>, Result<Details, ClientError>) = join!(game, details);
-        match (game, details) {
-            (Ok(g), Ok(d)) => {
-                return (Some(g), Some(d));
-            }
-            (Ok(g), Err(e)) => {
-                let d = fetch_details_with_retries(client, &mut retries, league_code, retry_wait_ms).await;
-                log::error!("Error fetching Details. \nDetails: {}", e);
-                return (Some(g), d);
-            }
-            (Err(e), Ok(d)) => {
-                let g = fetch_game_with_retries(client, &mut retries, retry_wait_ms).await;
-                log::error!("Error fetching Game. \nGame: {}", e);
-                return (g, Some(d));
-            }
-            (Err(eg), Err(ed)) => {
-                log::error!("Error fetching both Game and Details \nGame: {}\nDetails: {}", eg, ed);
-                retries -= 1;
-            }
-        }
-        thread::sleep(time::Duration::from_millis(retry_wait_ms));
-    }
-    (None, None)
-}
-
-async fn fetch_game_with_retries(client: &Client, retries: &mut i32, retry_wait_ms: u64) -> Option<Game> {
-    while *retries > 0 {
         let details = client.get_game().await;
         match details {
             Ok(g) => {
                 return Some(g);
             }
             Err(e) => {
-                log::error!("Error fetching Game. \nGame: {}", e);
-                *retries -= 1;
+                err = Some(e);
+                retries -= 1;
             }
         }
         thread::sleep(time::Duration::from_millis(retry_wait_ms));
     }
+    if let Some(e) = err {
+        log::error!("Error fetching Game. \nGame: {}", e);
+    }
     return None;
 }
 
-async fn fetch_details_with_retries(client: &Client, retries: &mut i32, league_code: &u32, retry_wait_ms: u64) -> Option<Details> {
-    while *retries > 0 {
+async fn fetch_details_with_retries(client: &Client, mut retries: i32, league_code: &u32, retry_wait_ms: u64) -> Option<Details> {
+    let mut err: Option<ClientError> = None;
+    while retries > 0 {
         let details = client.get_league_details(&league_code).await;
         match details {
             Ok(d) => {
                 return Some(d);
             }
             Err(e) => {
-                log::error!("Error fetching Details. \nDetails: {}", e);
-                *retries -= 1;
+                err = Some(e);
+                retries -= 1;
             }
         }
         thread::sleep(time::Duration::from_millis(retry_wait_ms));
+    }
+    if let Some(e) = err {
+        log::error!("Error fetching Details. \nDetails: {}", e);
     }
     return None;
 }

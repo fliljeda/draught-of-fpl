@@ -7,10 +7,10 @@ pub struct TeamGw {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Pick {
-    pub element: i32,
-    pub position: i32,
-    pub is_captain: bool,
-    pub is_vice_captain: bool,
-    pub multiplier: i32,
+    pub element: Option<i32>,
+    pub position: Option<i32>,
+    pub is_captain: Option<bool>,
+    pub is_vice_captain: Option<bool>,
+    pub multiplier: Option<i32>,
 }
 
