@@ -20,6 +20,7 @@ pub struct AppContext {
 pub struct AppConfig {
     pub league_id: u32,
     pub local_fetch: Option<bool>,
+    pub local_url: Option<String>,
 }
 
 impl AppConfig {

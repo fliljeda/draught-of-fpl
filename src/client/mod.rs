@@ -10,7 +10,7 @@ use futures::future::join_all;
 
 
 const FPL_API_BASE: &str = "https://draft.premierleague.com/api";
-const LOCAL_API_BASE: &str = "/fpl/api";
+const DEFAULT_LOCAL_API_BASE: &str = "/fpl/api";
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -45,6 +45,7 @@ pub struct Client {
     #[allow(dead_code)]
     http_client: ReqwestClient,
     local: bool,
+    local_url: Option<String>,
 }
 
 fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError> where T: de::Deserialize<'a> {
@@ -76,14 +77,16 @@ impl Client {
         let client = Client {
             http_client: reqwest_client,
             local: false,
+            local_url: None,
         };
 
         Ok(client)
     }
 
-    pub fn new_local() -> Result<Client, ClientError> {
+    pub fn new_local(local_url: Option<String>) -> Result<Client, ClientError> {
         let mut client = Client::new()?;
         client.set_local(true);
+        client.local_url = local_url;
         Ok(client)
     }
 
@@ -97,7 +100,11 @@ impl Client {
 
     fn get_base_url(&self) -> &str {
         if self.is_local() {
-            LOCAL_API_BASE
+            if let Some(url) = &self.local_url {
+                url.as_str()
+            } else {
+                DEFAULT_LOCAL_API_BASE
+            }
         } else {
             FPL_API_BASE
         }
@@ -294,7 +301,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_test_client() -> Result<(), ClientError>{
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         assert_eq!(client.local, true);
         assert_eq!(client.get_base_url(), LOCAL_API_BASE);
@@ -352,7 +359,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_endpoint_test_game() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         client.get_game().await?;
 
@@ -361,7 +368,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_endpoint_test_league_details() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         let league_code: u32 = 305;
         client.get_league_details(&league_code).await?;
@@ -371,7 +378,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_endpoint_test_live() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         let gw: u32 =  1;
         client.get_gw_points_live(&gw).await?;
@@ -381,7 +388,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_endpoint_test_team_gw() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         let gw: u32 =  1;
         let team: u32 = 856;
@@ -392,7 +399,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_endpoint_test_team_info() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         let team: u32 = 856;
         client.get_team_info(&team).await?;
@@ -402,7 +409,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_endpoint_test_static_info() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
 
         client.get_static().await?;
 
@@ -412,7 +419,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_test_multiple_team_gw() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
         let game = client.get_game().await?;
         let gw = game.current_event.unwrap_or(1);
 
@@ -438,7 +445,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_test_multiple_team_info() -> Result<(), ClientError> {
-        let client = Client::new_local().unwrap();
+        let client = Client::new_local(None).unwrap();
         let game = client.get_game().await?;
 
         let details = client.get_league_details(&305).await?;

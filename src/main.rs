@@ -26,12 +26,14 @@ pub async fn main() {
     let app_config = initializer::AppConfig::initialize();
 
     let client = match app_config.local_fetch {
-        Some(true) => Client::new_local().unwrap(),
+        Some(true) => Client::new_local(app_config.local_url.clone()).unwrap(),
         Some(false) | None => Client::new().unwrap(),
     };
+
     let league_id = app_config.league_id;
 
-    let app_context = Arc::new(RwLock::new(initializer::initialize_app_context(&client, league_id).await));
+    let app_context = initializer::initialize_app_context(&client, league_id).await;
+    let app_context = Arc::new(RwLock::new(app_context));
     let app_context_clone = Arc::clone(&app_context);
 
     let endpoints = Arc::new(RwLock::new(FplEndpoints::create_blank()));

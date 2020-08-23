@@ -1,2 +1,3 @@
 league_id = 305
 local_fetch = true
+local_url = "/home/fl/f/rust/draught-of-fpl/db/api/"
