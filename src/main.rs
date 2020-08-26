@@ -1,3 +1,4 @@
+
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]
@@ -12,10 +13,12 @@ use crate::client::Client;
 pub use initializer::AppContext;
 
 mod client;
+mod propcomp;
 mod fetcher;
 mod storage;
 mod structs;
 mod initializer;
+mod computer;
 
 
 
@@ -32,17 +35,16 @@ pub async fn main() {
 
     let league_id = app_config.league_id;
 
-    let app_context = initializer::initialize_app_context(&client, league_id).await;
-    let app_context = Arc::new(RwLock::new(app_context));
-    let app_context_clone = Arc::clone(&app_context);
+    let app_context = Arc::new(initializer::initialize_app_context(&client, league_id).await);
 
     let endpoints = Arc::new(RwLock::new(FplEndpoints::create_blank()));
     let endpoints_clone = Arc::clone(&endpoints);
 
-    std::thread::spawn(|| fetcher::endpoint_cache_fetcher(endpoints_clone, client, app_context_clone));
+    std::thread::spawn(|| fetcher::endpoint_cache_fetcher(client, endpoints_clone, app_context));
 
     let rocket = rocket::ignite()
         .mount("/fpl", routes![get_player])
+        .mount("/ns", routes![get_table])
         .manage(endpoints);
 
     rocket.launch();
@@ -53,19 +55,19 @@ pub async fn main() {
 fn get_player(id: u32, endpoints: State<Arc<RwLock<FplEndpoints>>>) -> String {
     return match endpoints.read() {
         Ok(ep) => {
-            if let Some(static_info) = &ep.static_info {
-                let i= (id - 1) as usize;
-                return match static_info.elements.get(i) {
-                    Some(element) => {
-                        let first_name = element.first_name.as_ref().unwrap();
-                        let second_name = element.second_name.as_ref().unwrap();
-                        let player_id = element.id.unwrap();
-                        format!("Player: {} {} with id {}\n", first_name, second_name, player_id)
-                    },
-                    None => format!("Could not find player with id {}\n", id),
-                };
-            }
-            format!("Have not retrieved static info")
+            let full_name = propcomp::get_player_full_name(&*ep, id);
+            format!("Player: {} with id {}\n", full_name, id)
+        },
+        Err(_e) => {
+            format!("Error reading endpoints")
+        }
+    }
+}
+#[get("/table")]
+fn get_table(endpoints: State<Arc<RwLock<FplEndpoints>>>) -> String {
+    return match endpoints.read() {
+        Ok(_ep) => {
+            format!("Ok")
         },
         Err(_e) => {
             format!("Error reading endpoints")
