@@ -58,7 +58,7 @@ pub fn main() {
 
     let rocket = rocket::ignite()
         .mount("/fpl", routes![get_player])
-        .mount("/ns", routes![get_table])
+        .mount("/", routes![get_table])
         .manage(endpoints)
         .manage(table);
 
