@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StaticInfo {
     pub elements: Vec<Element>,
     pub element_types: Vec<ElementType>,
@@ -12,13 +12,13 @@ pub struct StaticInfo {
     pub teams: Vec<Team>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Element {
-    pub web_name: Option<String>,
+    pub web_name: String,
     pub goals_conceded: Option<i32>,
     pub in_dreamteam: Option<bool>,
     pub news_return: Option<i32>,
-    pub team: Option<i32>,
+    pub team: u32,
     pub influence: Option<String>,
     pub bonus: Option<i32>,
     pub news: Option<String>,
@@ -29,17 +29,17 @@ pub struct Element {
     pub status: Option<String>,
     pub penalties_missed: Option<i32>,
     pub id: Option<i32>,
-    pub element_type: Option<i32>,
+    pub element_type: i32,
     pub news_updated: Option<i32>,
     pub chance_of_playing_this_round: Option<i32>,
     pub dreamteam_count: Option<i32>,
-    pub first_name: Option<String>,
+    pub first_name: String,
     pub red_cards: Option<i32>,
     pub chance_of_playing_next_round: Option<i32>,
     pub ict_index: Option<String>,
     pub code: Option<i32>,
     pub added: Option<String>,
-    pub second_name: Option<String>,
+    pub second_name: String,
     pub squad_number: Option<i32>,
     pub draft_rank: Option<i32>,
     pub total_points: Option<i32>,
@@ -58,7 +58,7 @@ pub struct Element {
     pub event_points: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ElementType {
     pub id: Option<i32>,
     pub singular_name: Option<String>,
@@ -67,7 +67,7 @@ pub struct ElementType {
     pub plural_name_short: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ElementStats {
     pub name: Option<String>,
     pub label: Option<String>,
@@ -77,14 +77,14 @@ pub struct ElementStats {
     pub sort: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Events {
     pub current: Option<i32>,
     pub data: Vec<EventData>,
     pub next: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventData {
     pub average_entry_score: Option<i32>,
     pub deadline_time: Option<String>,
@@ -95,7 +95,7 @@ pub struct EventData {
     pub waivers_time: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Fixture {
     pub id: Option<i32>,
     pub started: Option<bool>,
@@ -112,7 +112,7 @@ pub struct Fixture {
     pub team_h: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Settings {
     pub league: League,
     pub scoring: Scoring,
@@ -121,7 +121,7 @@ pub struct Settings {
     pub ui: Ui,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct League {
     pub default_entries: Option<i32>,
     pub draft_reminder_hours: Vec<i32>,
@@ -140,7 +140,7 @@ pub struct League {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Scoring {
     pub long_play_limit: Option<i32>,
     pub short_play: Option<i32>,
@@ -170,7 +170,7 @@ pub struct Scoring {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Squad {
     pub size: Option<i32>,
     pub select_GKP: Option<i32>,
@@ -190,7 +190,7 @@ pub struct Squad {
     pub captains_disabled: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transactions {
     pub new_element_locked_hours: Option<i32>,
     pub trade_veto_minimum: Option<i32>,
@@ -200,16 +200,16 @@ pub struct Transactions {
     pub waivers_before_deadline_hours_event: HashMap<i32, i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Ui {
     //special_shirt_exclusions: 	[]
     pub use_special_shirts: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Team {
-    pub code: Option<i32>,
-    pub id: Option<i32>,
-    pub name: Option<String>,
-    pub short_name: Option<String>,
+    pub code: i32,
+    pub id: u32,
+    pub name: String,
+    pub short_name: String,
 }

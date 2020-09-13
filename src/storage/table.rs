@@ -1,35 +1,76 @@
-use serde::{Deserialize};
+use serde::{Serialize, Deserialize};
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LeagueTable {
-    entries: Vec<Entry>,
+    pub entries: Vec<Entry>,
+    pub code: u32,
+    pub name: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Entry {
-    team_name: String,
-    points: i32,
-    projected_points: i32,
-    owner_name: String,
-    players: Vec<Player>,
+    pub team_name: String,
+    pub points: i32,
+    pub projected_points: i32,
+    pub owner_name: String,
+    pub players: Vec<Player>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Player {
-    id: u32,
-    full_name: String,
-    display_name: String,
-    team_pos: i32,
-    points: i32,
-    bonus_points: i32,
-    projected_points: i32,
-    point_sources: Vec<PointSource>,
+    pub id: u32,
+    pub full_name: String,
+    pub display_name: String,
+    pub team: Team,
+    pub team_pos: Position,
+    pub points: i32,
+    pub bps: i32,
+    pub projected_points: i32,
+    pub point_sources: Vec<PointSource>,
+    pub on_field: bool,
+    pub has_played: bool,
+    pub fixtures_finished: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Team {
+    pub id: u32,
+    pub name: String,
+    pub short_name: String,
+    pub code: u32,
+    pub shirt_url: String,
+    pub gk_shirt_url: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Position {
+    pub number: u32,
+    pub name: String,
+}
+
+impl Position {
+    pub fn from_number(number: u32) -> Position {
+        let name = match number {
+            1 => "GK",
+            2 => "DEF",
+            3 => "MID",
+            4 => "FWD",
+            _ => ""
+        };
+        let name = String::from(name);
+        Position {
+            number,
+            name,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PointSource {
-    name: String,
-    points_total: i32,
-    points_per: i32,
-    times: u32,
+    pub name: String,
+    pub points_total: i32,
+    pub value: i32,
+    pub fixture: u32,
+    pub stat: String,
+
 }

@@ -8,13 +8,15 @@ use futures::join;
 use crate::client::{Client, ClientError};
 use crate::storage::FplEndpoints;
 use crate::structs::*;
+use crate::storage::endpoints::FplEndpointsUpdate;
 
 #[allow(dead_code)]
 pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context_lock: Arc<crate::AppContext>) {
     loop {
         let app_context = context_lock.deref().clone();
         let fetch_sleep_ms = app_context.fetch_sleep_ms;
-        let new: FplEndpoints = fetch_new_endpoints(&client, app_context);
+        log::info!("Fetching new endpoints");
+        let new = fetch_new_endpoints(&client, app_context);
         match endpoints_lock.write() {
             Ok(mut t) => {
                 log::trace!("Grabbed the lock");
@@ -42,7 +44,7 @@ fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {
     };
 }
 
-fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpoints {
+pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpointsUpdate {
     let mut rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         let league_code = context.league_id;
@@ -80,7 +82,7 @@ fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpoi
             team_infos.insert(team, handle_error_into_option(res));
         }
 
-        FplEndpoints {
+        FplEndpointsUpdate {
             details,
             static_info,
             game,

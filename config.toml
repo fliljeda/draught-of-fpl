@@ -1,3 +1,4 @@
-league_id = 305
-local_fetch = true
-local_url = "/home/fl/f/rust/draught-of-fpl/db/api/"
+league_id = 44
+local_fetch = false
+#local_url = "/home/fl/f/rust/draught-of-fpl/db/api/"
+local_url = "/fpl/api"

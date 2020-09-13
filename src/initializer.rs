@@ -56,20 +56,23 @@ fn read_config_file_flag() -> Option<String> {
 }
 
 
-pub async fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
-    let game = client.get_game().await.unwrap();
-    let details = client.get_league_details(&league_id).await.unwrap();
+pub fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
+    let mut rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        let game = client.get_game().await.unwrap();
+        let details = client.get_league_details(&league_id).await.unwrap();
 
-    let team_ids = details.league_entries.iter().map(|x| x.entry_id.unwrap()).collect();
+        let team_ids = details.league_entries.iter().map(|x| x.entry_id).collect();
 
-    let gw = game.current_event.expect("No game week found when initializing appContext");
+        let gw = game.current_event.expect("No game week found when initializing appContext, must be preseason!");
 
-    let fetch_sleep_ms = 30_000 as u64;
+        let fetch_sleep_ms = 30_000 as u64;
 
-    AppContext {
-        league_id,
-        team_ids,
-        gw,
-        fetch_sleep_ms,
-    }
+        AppContext {
+            league_id,
+            team_ids,
+            gw,
+            fetch_sleep_ms,
+        }
+    })
 }

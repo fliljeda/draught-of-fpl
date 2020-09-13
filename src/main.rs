@@ -8,9 +8,13 @@ use std::sync::{Arc, RwLock};
 
 use rocket::State;
 
-use crate::storage::FplEndpoints;
+use crate::storage::{
+    FplEndpoints,
+    LeagueTable,
+};
 use crate::client::Client;
 pub use initializer::AppContext;
+use std::ops::Deref;
 
 mod client;
 mod propcomp;
@@ -23,8 +27,7 @@ mod computer;
 
 
 
-#[tokio::main]
-pub async fn main() {
+pub fn main() {
 
     let app_config = initializer::AppConfig::initialize();
 
@@ -35,17 +38,29 @@ pub async fn main() {
 
     let league_id = app_config.league_id;
 
-    let app_context = Arc::new(initializer::initialize_app_context(&client, league_id).await);
+    let app_context = Arc::new(initializer::initialize_app_context(&client, league_id));
 
-    let endpoints = Arc::new(RwLock::new(FplEndpoints::create_blank()));
-    let endpoints_clone = Arc::clone(&endpoints);
+    let endpoints = fetcher::fetch_new_endpoints(&client, app_context.deref().clone());
+    let endpoints = storage::FplEndpoints::initialize_from_update(endpoints);
 
-    std::thread::spawn(|| fetcher::endpoint_cache_fetcher(client, endpoints_clone, app_context));
+    let initialize_table_endpoints = endpoints.clone();
+    let table = computer::compute_new_league_table(initialize_table_endpoints).unwrap();
+
+    let endpoints = Arc::new(RwLock::new(endpoints));
+    let endpoints_fetch_clone = Arc::clone(&endpoints);
+    let endpoints_compute_clone = Arc::clone(&endpoints);
+
+    let table = Arc::new(RwLock::new(table));
+    let table_compute_clone = Arc::clone(&table);
+
+    std::thread::spawn(|| fetcher::endpoint_cache_fetcher(client, endpoints_fetch_clone, app_context));
+    std::thread::spawn(|| computer::league_table_computer(table_compute_clone, endpoints_compute_clone));
 
     let rocket = rocket::ignite()
         .mount("/fpl", routes![get_player])
         .mount("/ns", routes![get_table])
-        .manage(endpoints);
+        .manage(endpoints)
+        .manage(table);
 
     rocket.launch();
 }
@@ -64,13 +79,15 @@ fn get_player(id: u32, endpoints: State<Arc<RwLock<FplEndpoints>>>) -> String {
     }
 }
 #[get("/table")]
-fn get_table(endpoints: State<Arc<RwLock<FplEndpoints>>>) -> String {
-    return match endpoints.read() {
-        Ok(_ep) => {
-            format!("Ok")
+fn get_table(table: State<Arc<RwLock<LeagueTable>>>) -> String {
+    return match table.read() {
+        Ok(t) => {
+            let table_ser = serde_json::to_string(t.deref())
+                .expect("Could not serialize table");
+            format!("{}", table_ser)
         },
         Err(_e) => {
-            format!("Error reading endpoints")
+            format!("Error reading league table")
         }
     }
 }

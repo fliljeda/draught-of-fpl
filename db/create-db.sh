@@ -16,7 +16,8 @@ path_curl() {
     path=$(echo $1 | sed -e 's/^https:\/\/draft.premierleague.com\///g')
     dirpath=$(echo $path | sed -e 's/\(.*\)\/.*/\1/g')
     mkdir -p $dirpath
-    pc_json=$(curl "$1" | jq -r -M ".")
+    local curl_res=$(set -x; curl -s "$1")
+    pc_json=$(echo $curl_res | jq -r -M ".")
     if [ ! -e "$path" ]; then
         echo "$pc_json" > $path
     fi
@@ -42,20 +43,24 @@ _current_gw=$(echo $pc_json | jq ".current_event")
 #Get teams 
 path_curl "${_api_prefix}/league/${_league}/details"
 _teams=$(echo $pc_json | jq ".league_entries[].entry_id")
-echo $_teams
+
 
 
 #Fetch team specific
 for team_id in $_teams; do
     path_curl "${_api_prefix}/entry/${team_id}/public"
 done
+if [ ! "$_current_gw" == "null" ]; then
+    for gw in $(seq $_current_gw); do
+        #Fetch GW specific
+        path_curl "${_api_prefix}/event/${_current_gw}/live"
 
-for gw in $(seq $_current_gw); do
-    #Fetch GW specific
-    path_curl "${_api_prefix}/event/${_current_gw}/live"
-
-    for team_id in $_teams; do
-        #Fetch GW + Team specific
-        path_curl "${_api_prefix}/entry/${team_id}/event/${gw}"
+        for team_id in $_teams; do
+            #Fetch GW + Team specific
+            path_curl "${_api_prefix}/entry/${team_id}/event/${gw}"
+        done
     done
-done
+else
+    echo "Current GW is null, preseason!"
+    exit
+fi

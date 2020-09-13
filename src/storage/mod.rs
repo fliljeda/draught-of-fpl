@@ -1,8 +1,8 @@
-mod table;
-mod endpoints;
+pub mod table;
+pub mod endpoints;
 
 
-pub use endpoints::*;
-pub use table::*;
+pub use endpoints::FplEndpoints;
+pub use table::LeagueTable;
 
 
