@@ -123,7 +123,7 @@ pub fn get_player_point_sources(endpoints: &FplEndpoints, player_id: u32) -> Vec
         for live_point in live_points {
             let src = TablePointSource {
                 name: live_point.name,
-                value: live_point.value,
+                amount: live_point.value,
                 points_total: live_point.points,
                 stat: live_point.stat,
                 fixture: fixture.id,
