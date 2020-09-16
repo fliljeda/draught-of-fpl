@@ -45,11 +45,13 @@ fn read_config_file_flag() -> Option<String> {
     while let Some(arg) = args_iter.next() {
         if arg == "-f" {
             match args_iter.next() {
-                Some(p) => Some(p),
+                Some(p) => {
+                    return Some(p);
+                },
                 None => {
                     panic!("Config file path must follow flag -f")
                 }
-            };
+            }
         }
     }
     None
