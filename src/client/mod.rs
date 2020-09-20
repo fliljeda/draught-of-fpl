@@ -143,7 +143,7 @@ impl Client {
     }
 
     async fn fetch_web(&self, path: &str) -> Result<String, ClientError> {
-        println!("Fetching {}", path);
+        log::trace!("Fetching {}", path);
         let resp =  match self.http_client.get(path).send().await {
             Ok(r) => r,
             Err(e) => {

@@ -10,6 +10,12 @@ use crate::storage::table::Position as PlayerPosition;
 #[allow(dead_code)]
 pub fn league_table_computer(lock: Arc<RwLock<LeagueTable>>, endpoints_lock: Arc<RwLock<FplEndpoints>>) {
     loop {
+        {
+            let sleep_ms = 30_000;
+            log::trace!("Sleeping computer thread for {} ms", sleep_ms);
+            thread::sleep(time::Duration::from_millis(sleep_ms));
+        }
+
         let endpoints = match endpoints_lock.read() {
             Ok(e) => (*e).clone(),
             Err(e) => {
@@ -35,11 +41,6 @@ pub fn league_table_computer(lock: Arc<RwLock<LeagueTable>>, endpoints_lock: Arc
             None => (),
         }
 
-        {
-            let sleep_ms = 10_000;
-            log::trace!("Sleeping computer thread for {} ms", sleep_ms);
-            thread::sleep(time::Duration::from_millis(sleep_ms));
-        }
     }
 }
 
@@ -64,12 +65,19 @@ fn compute_league_entries(endpoints: &FplEndpoints) -> Vec<TableEntry> {
 }
 
 fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry{
+    let owner_name = propcomp::get_team_owner_name(endpoints, id);
+    let team_name = propcomp::get_team_name(endpoints, id);
+    let players = extract_players(endpoints, id);
+    let points = players.iter()
+        .filter(|p| p.on_field)
+        .map(|p| p.points).sum();
+    let projected_points = calculate_projected_points(&players);
     TableEntry{
-        owner_name: propcomp::get_team_owner_name(endpoints, id),
-        team_name: propcomp::get_team_name(endpoints, id),
-        players: extract_players(endpoints, id),
-        points: 0,
-        projected_points: 0,
+        owner_name,
+        team_name,
+        players,
+        points,
+        projected_points,
     }
 }
 
@@ -90,8 +98,10 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
         let projected_points = propcomp::get_player_projected_points(endpoints, player_id);
         let point_sources = propcomp::get_player_point_sources(endpoints, player_id);
         let on_field = propcomp::compute_player_is_on_field(pick, team_entry);
+        let pick_number = pick.position;
         let has_played = propcomp::compute_player_has_played(endpoints, player_id);
         let fixtures_finished = propcomp::compute_player_fixtures_has_finished(endpoints, player_id);
+        let has_upcoming_fixtures = propcomp::compute_player_has_upcoming_fixtures(endpoints, player_id);
 
         let player = TablePlayer {
             id,
@@ -104,12 +114,93 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
             projected_points,
             point_sources,
             on_field,
+            pick_number,
             has_played,
             fixtures_finished,
+            has_upcoming_fixtures,
         };
         players.push(player);
     }
 
 
     players
+}
+
+
+fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
+    let mut projected_playing_players: Vec<&TablePlayer> = players.iter()
+        .filter(|p| (p.on_field && p.has_played) || (p.on_field && p.has_upcoming_fixtures))
+        .collect();
+
+    let mut benched_players: Vec<&TablePlayer> = players.iter()
+        .filter(|p| p.pick_number >= 12 && !p.on_field)
+        .collect();
+    benched_players.sort_by_key(|p| p.pick_number);
+
+    let mut gks: Vec<&TablePlayer> = projected_playing_players.iter()
+        .filter(|p | p.team_pos.number == 1)
+        .map(|p| *p)
+        .collect();
+    let mut defs: Vec<&TablePlayer> = projected_playing_players.iter()
+        .filter(|p | p.team_pos.number == 2)
+        .map(|p| *p)
+        .collect();
+    let mut mids: Vec<&TablePlayer> = projected_playing_players.iter()
+        .filter(|p | p.team_pos.number == 3)
+        .map(|p| *p)
+        .collect();
+    let mut fwds: Vec<&TablePlayer> = projected_playing_players.iter()
+        .filter(|p | p.team_pos.number == 4)
+        .map(|p| *p)
+        .collect();
+
+    // Sub in benched players if too few are on pitch, these will always have a space in the team
+    // for these players as a standard team requires a certain amount of players at each position
+    benched_players.retain(|p| {
+        let mut retain = true;
+        match p.team_pos.number {
+            1 => {
+                if gks.len() < 1 {
+                    projected_playing_players.push(p);
+                    gks.push(p);
+                    retain = false;
+                }
+            }
+            2 => {
+                if defs.len() < 3 {
+                    projected_playing_players.push(p);
+                    defs.push(p);
+                    retain = false;
+                }
+            }
+            3 => {
+                if mids.len() < 2 {
+                    projected_playing_players.push(p);
+                    mids.push(p);
+                    retain = false;
+                }
+            }
+            4 => {
+                if fwds.len() < 1 {
+                    projected_playing_players.push(p);
+                    fwds.push(p);
+                    retain = false;
+                }
+            }
+            _ => {}
+        }
+        retain
+    });
+
+    // See if there are any benched players that we can fit in the on field eleven. Now only
+    // the team size cap is the issue: 11, except for goalkeepers, they can't both fit and
+    // any substitution must have taken place before
+    benched_players.iter().for_each(|p| {
+        if projected_playing_players.len() < 11 && p.team_pos.number != 1 {
+             projected_playing_players.push(p);
+        }
+    });
+
+
+    projected_playing_players.iter().map(|p| p.projected_points).sum()
 }

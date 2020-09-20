@@ -57,7 +57,7 @@ pub struct Stats {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Fixture {
     pub id: u32,
-    pub started: Option<bool>,
+    pub started: bool,
     pub stats: Vec<FixtureStats>,
     pub code: Option<i32>,
     pub finished: bool,

@@ -72,6 +72,11 @@ pub fn compute_player_fixtures_has_finished(endpoints: &FplEndpoints, player_id:
     fixtures.iter().all(|fixture| fixture.finished)
 }
 
+pub fn compute_player_has_upcoming_fixtures(endpoints: &FplEndpoints, player_id: u32) -> bool {
+    let fixtures = get_player_current_fixtures(endpoints, player_id);
+    fixtures.iter().any(|f| !f.started)
+}
+
 pub fn compute_player_team(endpoints: &FplEndpoints, player_id: u32) -> TableTeam {
     let team_id = get_player_team_id(endpoints, player_id);
     let team = endpoints.static_info.teams.iter().find(|team| team_id == team.id)
