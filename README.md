@@ -11,14 +11,14 @@ credentials is to find your league ID
 
 ## High level architecture
 
-1. Read config.toml to configure the context of the program such as ID of the league we want information from.
+1. Read Config.toml to configure the context of the program such as ID of the league we want information from.
 2. Sets up a fetch thread that in intervals fetches new information from the FPL api
 3. Sets up a compute thread that in intervals computes the values that we want to provide in the intermediate api
 4. Use [rocket.rs](https://rocket.rs/) to set up a web server that serves selected values computed in the compute thread
 
-### Configuring the server
+### Configuring the application
 
-The configuration for this server is done using a .toml file (default ./config.toml) which is
+The configuration for this server is done using a .toml file (default ./Config.toml) which is
 serialized using a [TOML](https://toml.io/) parser when the server starts. The structure of this configuration file is
 best observed in the code. 
 
@@ -26,6 +26,12 @@ The only mandatory element of the configuration file is the league code as
 ```
 league_id = 1337
 ```
+
+#### Configuring rocket.rs server
+
+See rocket.rs own [configuration tutorial](https://rocket.rs/v0.4/guide/configuration/#rockettoml)
+where things like server port can be configured. This is done using the Rocket.toml configuration 
+file.
 
 ## Getting started
 

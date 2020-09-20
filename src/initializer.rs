@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::client::Client;
 
-const CONFIG_FILE_DEFAULT_PATH: &str = "./config.toml";
+const CONFIG_FILE_DEFAULT_PATH: &str = "./Config.toml";
 
 
 #[derive(Clone, Debug)]
