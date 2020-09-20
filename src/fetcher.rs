@@ -11,10 +11,16 @@ use crate::structs::*;
 use crate::storage::endpoints::FplEndpointsUpdate;
 
 #[allow(dead_code)]
-pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context_lock: Arc<crate::AppContext>) {
+pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context: Arc<crate::AppContext>) {
     loop {
-        let app_context = context_lock.deref().clone();
+        let app_context = context.deref().clone();
         let fetch_sleep_ms = app_context.fetch_sleep_ms;
+
+        {
+            log::trace!("Sleeping fetcher thread for {} ms", fetch_sleep_ms);
+            thread::sleep(time::Duration::from_millis(fetch_sleep_ms));
+        }
+
         log::info!("Fetching new endpoints");
         let new = fetch_new_endpoints(&client, app_context);
         match endpoints_lock.write() {
@@ -26,10 +32,6 @@ pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndp
                 log::error!("Could not grab write lock for endpoints: {}", e);
             }
         };
-        {
-            log::trace!("Sleeping fetcher thread for {} ms", fetch_sleep_ms);
-            thread::sleep(time::Duration::from_millis(fetch_sleep_ms));
-        }
     }
 }
 

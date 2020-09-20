@@ -65,12 +65,19 @@ pub struct Player {
     // substituted in
     pub on_field: bool,
 
+    // The pick number of the player on the FPL teams. Where 12-15 are the bench and the rest are
+    // chosen by the team owner as playing
+    pub pick_number: i32,
+
     // Whether or not this player has played any minutes this game week, therefore qualifying for
     // points
     pub has_played: bool,
 
     // Whether or not this player's fixtures are finished
     pub fixtures_finished: bool,
+
+    // Whether or not the player has any fixtures this gameweek
+    pub has_upcoming_fixtures: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
