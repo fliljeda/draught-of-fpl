@@ -15,6 +15,8 @@ use crate::storage::{
 use crate::client::Client;
 pub use initializer::AppContext;
 use std::ops::Deref;
+use std::io::Cursor;
+use rocket::http::ContentType;
 
 mod client;
 mod propcomp;
@@ -78,16 +80,25 @@ fn get_player(id: u32, endpoints: State<Arc<RwLock<FplEndpoints>>>) -> String {
         }
     }
 }
+
 #[get("/table")]
-fn get_table(table: State<Arc<RwLock<LeagueTable>>>) -> String {
+fn get_table(table: State<Arc<RwLock<LeagueTable>>>) -> rocket::Response {
     return match table.read() {
         Ok(t) => {
             let table_ser = serde_json::to_string(t.deref())
                 .expect("Could not serialize table");
-            format!("{}", table_ser)
+            to_response(table_ser)
         },
         Err(_e) => {
-            format!("Error reading league table")
+            to_response(format!("Error reading league table"))
         }
     }
+}
+
+fn to_response(content: String) -> rocket::Response<'static> {
+    rocket::Response::build()
+        .header(rocket::http::ContentType::JSON)
+        .raw_header("Access-Control-Allow-Origin", "*")
+        .sized_body(Cursor::new(content))
+        .finalize()
 }
