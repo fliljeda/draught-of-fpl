@@ -86,9 +86,37 @@ cd db
 builds a directory called `api` under which the important endpoints should be available. 
 
 ```
-ls -l
-drwxrwxr-x 5 fpl fpl 4096 sep 12 14:00 api
--rwxrwxr-x 1 fpl fpl 1446 sep 12 15:00 create-db.sh
+r@u:~/db$ tree 
+.
+├── api
+│   ├── bootstrap-static
+│   ├── entry
+│   │   ├── 55
+│   │   │   ├── event
+│   │   │   │   ├── 1
+│   │   │   │   └── 2
+│   │   │   └── public
+│   │   ├── 85
+│   │   │   ├── event
+│   │   │   │   ├── 1
+│   │   │   │   └── 2
+│   │   │   └── public
+│   │   └── 105
+│   │       ├── event
+│   │       │   ├── 1
+│   │       │   └── 2
+│   │       └── public
+│   ├── event
+│   │   └── 2
+│   │       └── live
+│   ├── game
+│   └── league
+│       └── 1337
+│           └── details
+└── create-db.sh
+
+18 directories, 23 files
+
 ```
 
 ## Response: Table Structure
