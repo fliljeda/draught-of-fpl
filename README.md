@@ -97,11 +97,6 @@ r@u:~/db$ tree
 │   │   │   │   ├── 1
 │   │   │   │   └── 2
 │   │   │   └── public
-│   │   ├── 85
-│   │   │   ├── event
-│   │   │   │   ├── 1
-│   │   │   │   └── 2
-│   │   │   └── public
 │   │   └── 105
 │   │       ├── event
 │   │       │   ├── 1
@@ -115,9 +110,6 @@ r@u:~/db$ tree
 │       └── 1337
 │           └── details
 └── create-db.sh
-
-18 directories, 23 files
-
 ```
 
 ## Response: Table Structure
@@ -129,26 +121,20 @@ Explanations for the values within the table exist as comments in the table code
 We add TLS functionality to draught-of-fpl by configuring TLS for the rocket framework.
 Instructions on how to do this is found [here](https://rocket.rs/v0.4/guide/configuration/#configuring-tls)
 
-Which says to add the following
+Add the following to **Rocket.toml**
 ```
 [global.tls]
 certs = "/path/to/cert.pem"
 key = "/path/to/key.pem"
 ```
-
-to **Rocket.toml**. This requires us to provide links to a certificate and private key. We 
-can generate self-signed certificates using the following command
+The two values to set are links to a certificate and private key. We 
+can generate self-signed certificates using the following command 
+which outputs **key.pem** and **cert.pem** into the current directorry
 
 ```
+# -nodes required because Rocket does not handle encrypted private key by default
 openssl req -x509 -sha256 -nodes -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
 ```
-
-*Flag **-nodes** was required because rocket was not able to parse an encrypted private key
- by default*
-
-And we end up with the files **key.pem** and **cert.pem** which can be set as *certs* and
-*key* in **Rocket.toml**. Testing this with `curl` we must use the flag `-k` to make `curl`
-
 
 If you don't want a self-signed certificate we can use
  [Let's Encrypt](https://letsencrypt.org/getting-started/) 
