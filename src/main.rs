@@ -1,22 +1,21 @@
-
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]
 extern crate rocket;
 
+use std::io::Cursor;
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use rocket::State;
 
+pub use initializer::AppContext;
+
+use crate::client::Client;
 use crate::storage::{
     FplEndpoints,
     LeagueTable,
 };
-use crate::client::Client;
-pub use initializer::AppContext;
-use std::ops::Deref;
-use std::io::Cursor;
-use rocket::http::ContentType;
 
 mod client;
 mod propcomp;
@@ -27,10 +26,7 @@ mod initializer;
 mod computer;
 
 
-
-
 pub fn main() {
-
     let app_config = initializer::AppConfig::initialize();
 
     let client = match app_config.local_fetch {
@@ -74,11 +70,11 @@ fn get_player(id: u32, endpoints: State<Arc<RwLock<FplEndpoints>>>) -> String {
         Ok(ep) => {
             let full_name = propcomp::get_player_full_name(&*ep, id);
             format!("Player: {} with id {}\n", full_name, id)
-        },
+        }
         Err(_e) => {
             format!("Error reading endpoints")
         }
-    }
+    };
 }
 
 #[get("/table")]
@@ -88,11 +84,11 @@ fn get_table(table: State<Arc<RwLock<LeagueTable>>>) -> rocket::Response {
             let table_ser = serde_json::to_string(t.deref())
                 .expect("Could not serialize table");
             to_response(table_ser)
-        },
+        }
         Err(_e) => {
             to_response(format!("Error reading league table"))
         }
-    }
+    };
 }
 
 fn to_response(content: String) -> rocket::Response<'static> {

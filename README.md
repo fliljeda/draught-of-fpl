@@ -1,5 +1,5 @@
 ## Concept
-Draught of FPL is an intermediator for a [Fantasy Premier League Draft League](https://draft.premierleague.com)
+Draught of FPL is an intermediator for a [Fantasy Premier League Draft](https://draft.premierleague.com) league
 
 While the official site has almost all the good information that you could want, it falls short in
 some aspects, most notably an updated overview of the entire league. The main feature of this
@@ -20,7 +20,8 @@ credentials is to find your league ID
 
 The configuration for this server is done using a .toml file (default ./Config.toml) which is
 serialized using a [TOML](https://toml.io/) parser when the server starts. The structure of this configuration file is
-best observed in the code. 
+best observed in the code of `src/initializer.rs` but the intention is to have **Config.toml** updated with default
+values in the repository.
 
 The only mandatory element of the configuration file is the league code as 
 ```
@@ -122,3 +123,33 @@ r@u:~/db$ tree
 ## Response: Table Structure
 
 Explanations for the values within the table exist as comments in the table code.
+
+## TLS
+
+We add TLS functionality to draught-of-fpl by configuring TLS for the rocket framework.
+Instructions on how to do this is found [here](https://rocket.rs/v0.4/guide/configuration/#configuring-tls)
+
+Which says to add the following
+```
+[global.tls]
+certs = "/path/to/cert.pem"
+key = "/path/to/key.pem"
+```
+
+to **Rocket.toml**. This requires us to provide links to a certificate and private key. We 
+can generate self-signed certificates using the following command
+
+```
+openssl req -x509 -sha256 -nodes -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+```
+
+*Flag **-nodes** was required because rocket was not able to parse an encrypted private key
+ by default*
+
+And we end up with the files **key.pem** and **cert.pem** which can be set as *certs* and
+*key* in **Rocket.toml**. Testing this with `curl` we must use the flag `-k` to make `curl`
+
+
+If you don't want a self-signed certificate we can use
+ [Let's Encrypt](https://letsencrypt.org/getting-started/) 
+that recommends using [certbot](https://certbot.eff.org/) but requires a bit more of a setup.

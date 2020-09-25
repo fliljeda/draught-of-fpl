@@ -1,2 +1,6 @@
 [global]
 port = 8000
+
+#[global.tls]
+#certs = "/path/to/cert.pem"
+#key = "/path/to/key.pem"
