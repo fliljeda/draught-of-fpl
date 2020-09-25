@@ -7,12 +7,12 @@ pub struct TeamInfo {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entry {
-    pub event_points: Option<i32>,
+    pub event_points: i32,
     pub favourite_team:	Option<i32>,
     pub id: Option<i32>,
     pub league_set: Vec<i32>,
     pub name: String,
-    pub overall_points: Option<i32>,
+    pub overall_points: i32,
     pub player_first_name: String,
     pub player_last_name: String,
     pub region_name: Option<String>,
