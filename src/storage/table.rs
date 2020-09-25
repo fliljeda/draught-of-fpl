@@ -17,12 +17,18 @@ pub struct Entry {
     // The name of the draft league team
     pub team_name: String,
 
+    // The total number of points of this team all season
+    pub total_points: i32,
+
+    // The total number of projected points of this team all season
+    pub total_projected_points: i32,
+
     // The current number of total points of the team, as calculated by the official FPL site
-    pub points: i32,
+    pub gw_points: i32,
 
     // The current number of points of the team, by calculating current metrics such as bps and
     // certain substitutions
-    pub projected_points: i32,
+    pub gw_projected_points: i32,
 
     // Name of the owner of the FPL team
     pub owner_name: String,
