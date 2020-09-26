@@ -53,7 +53,7 @@ done
 if [ ! "$_current_gw" == "null" ]; then
     for gw in $(seq $_current_gw); do
         #Fetch GW specific
-        path_curl "${_api_prefix}/event/${_current_gw}/live"
+        path_curl "${_api_prefix}/event/${gw}/live"
 
         for team_id in $_teams; do
             #Fetch GW + Team specific
