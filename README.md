@@ -103,6 +103,8 @@ r@u:~/db$ tree
 │   │       │   └── 2
 │   │       └── public
 │   ├── event
+│   │   └── 1
+│   │       └── live
 │   │   └── 2
 │   │       └── live
 │   ├── game
