@@ -63,7 +63,7 @@ pub struct Fixture {
     pub finished: bool,
     pub finished_provisional: Option<bool>,
     pub kickoff_time: Option<String>,
-    pub minutes: Option<i32>,
+    pub minutes: i32,
     pub provisional_start_time: Option<bool>,
     pub team_a_score: Option<i32>,
     pub team_h_score: Option<i32>,

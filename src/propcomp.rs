@@ -163,7 +163,9 @@ fn calculate_point_sources(fixtures: &Vec<Vec<PointsOrFixture>>, fixture_id: u32
     point_sources
 }
 
+// Calculate bonus points
 fn calculate_bonus_points(fixture: &LiveFixture, player_id: u32) -> i32 {
+    let fixture_minutes = fixture.minutes;
     for stat in fixture.stats.iter() {
         if stat.s.eq("bps") {
             let mut bps: Vec<FixtureStat> = Vec::new();
@@ -180,6 +182,10 @@ fn calculate_bonus_points(fixture: &LiveFixture, player_id: u32) -> i32 {
                 Some(stat) => stat.value,
                 None => 0,
             };
+
+            if player_bps < 10 && fixture_minutes < 15 {
+                return 0;
+            }
 
             let bonus = match player_bps {
                 0 => 0,
