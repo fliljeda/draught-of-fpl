@@ -45,8 +45,10 @@ pub fn league_table_computer(lock: Arc<RwLock<LeagueTable>>, endpoints_lock: Arc
 }
 
 pub fn compute_new_league_table(endpoints: FplEndpoints) -> Option<LeagueTable> {
+    let mut entries = compute_league_entries(&endpoints);
+    entries.sort_by_key(|x| std::cmp::Reverse(x.total_points));
     let table = LeagueTable {
-        entries: compute_league_entries(&endpoints),
+        entries,
         code: propcomp::get_league_id(&endpoints),
         name: propcomp::get_league_name(&endpoints),
     };
