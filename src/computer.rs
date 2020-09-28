@@ -145,7 +145,7 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
 
 fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
     let mut projected_playing_players: Vec<&TablePlayer> = players.iter()
-        .filter(|p| (p.on_field && p.has_played) || (p.on_field && p.has_upcoming_fixtures))
+        .filter(|p| (p.on_field && p.has_played) || (p.on_field && !p.fixtures_finished))
         .collect();
 
     let mut benched_players: Vec<&TablePlayer> = players.iter()
