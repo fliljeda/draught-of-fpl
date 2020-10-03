@@ -9,6 +9,7 @@ use crate::client::{Client, ClientError};
 use crate::storage::FplEndpoints;
 use crate::structs::*;
 use crate::storage::endpoints::FplEndpointsUpdate;
+use std::borrow::Borrow;
 
 #[allow(dead_code)]
 pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context: Arc<crate::AppContext>) {
@@ -48,9 +49,9 @@ fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {
 
 pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpointsUpdate {
     let mut rt = tokio::runtime::Runtime::new().unwrap();
+    let mut gw = 1;
     rt.block_on(async {
         let league_code = context.league_id;
-        let gw: u32 = context.gw;
         let teams = context.team_ids;
 
         //let (game, details) = fetch_game_and_details_with_retries(client, &league_code).await;
@@ -58,7 +59,17 @@ pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEn
         let retry_delay_ms = 10;
         let game = fetch_game_with_retries(client, retries, retry_delay_ms);
         let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
-        let (game, details) = join!(game, details);
+        let (game, details): (Option<Game>, Option<Details>) = join!(game, details);
+
+        gw = game.as_ref().map(|game|
+            match game.current_event {
+                Some(current_gw) => current_gw,
+                None => {
+                    log::error!("Did not find new GW in fetch, using GW: {}", gw);
+                    gw
+                }
+            }
+        ).unwrap_or(gw);
 
 
         // Start http_calls

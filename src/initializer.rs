@@ -12,7 +12,6 @@ const CONFIG_FILE_DEFAULT_PATH: &str = "./Config.toml";
 pub struct AppContext {
     pub league_id: u32,
     pub team_ids: Vec<u32>,
-    pub gw: u32,
     pub fetch_sleep_ms: u64,
 }
 
@@ -62,18 +61,17 @@ pub fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
     let mut rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         let game = client.get_game().await.unwrap();
+        game.current_event.expect("No game week found when initializing appContext, must be preseason!");
         let details = client.get_league_details(&league_id).await.unwrap();
 
         let team_ids = details.league_entries.iter().map(|x| x.entry_id).collect();
 
-        let gw = game.current_event.expect("No game week found when initializing appContext, must be preseason!");
 
-        let fetch_sleep_ms = 30_000 as u64;
+        let fetch_sleep_ms = 60_000 as u64;
 
         AppContext {
             league_id,
             team_ids,
-            gw,
             fetch_sleep_ms,
         }
     })
