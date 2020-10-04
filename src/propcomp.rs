@@ -69,7 +69,7 @@ pub fn compute_player_has_played(endpoints: &FplEndpoints, player_id: u32) -> bo
 
 pub fn compute_player_fixtures_has_finished(endpoints: &FplEndpoints, player_id: u32) -> bool {
     let fixtures = get_player_current_fixtures(endpoints, player_id);
-    fixtures.iter().all(|fixture| fixture.finished)
+    fixtures.iter().all(|fixture| fixture.finished_provisional)
 }
 
 pub fn compute_player_has_upcoming_fixtures(endpoints: &FplEndpoints, player_id: u32) -> bool {

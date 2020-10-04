@@ -61,7 +61,7 @@ pub struct Fixture {
     pub stats: Vec<FixtureStats>,
     pub code: Option<i32>,
     pub finished: bool,
-    pub finished_provisional: Option<bool>,
+    pub finished_provisional: bool,
     pub kickoff_time: Option<String>,
     pub minutes: i32,
     pub provisional_start_time: Option<bool>,

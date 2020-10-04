@@ -9,7 +9,6 @@ use crate::client::{Client, ClientError};
 use crate::storage::FplEndpoints;
 use crate::structs::*;
 use crate::storage::endpoints::FplEndpointsUpdate;
-use std::borrow::Borrow;
 
 #[allow(dead_code)]
 pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context: Arc<crate::AppContext>) {
@@ -61,15 +60,16 @@ pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEn
         let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
         let (game, details): (Option<Game>, Option<Details>) = join!(game, details);
 
-        gw = game.as_ref().map(|game|
+        game.as_ref().map(|game|
             match game.current_event {
-                Some(current_gw) => current_gw,
+                Some(current_gw) => {
+                    gw = current_gw;
+                },
                 None => {
                     log::error!("Did not find new GW in fetch, using GW: {}", gw);
-                    gw
                 }
             }
-        ).unwrap_or(gw);
+        );
 
 
         // Start http_calls
