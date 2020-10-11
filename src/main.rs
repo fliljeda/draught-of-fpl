@@ -38,8 +38,7 @@ pub fn main() {
 
     let app_context = Arc::new(initializer::initialize_app_context(&client, league_id));
 
-    let endpoints = fetcher::fetch_new_endpoints(&client, app_context.deref().clone());
-    let endpoints = storage::FplEndpoints::initialize_from_update(endpoints);
+    let endpoints = fetcher::fetch_and_initialize_endpoints(&client, app_context.deref().clone());
 
     let initialize_table_endpoints = endpoints.clone();
     let table = computer::compute_new_league_table(initialize_table_endpoints).unwrap();

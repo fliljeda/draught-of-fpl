@@ -13,6 +13,7 @@ pub struct AppContext {
     pub league_id: u32,
     pub team_ids: Vec<u32>,
     pub fetch_sleep_ms: u64,
+    pub static_info_fetch_freq_ms: u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -69,10 +70,13 @@ pub fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
 
         let fetch_sleep_ms = 60_000 as u64;
 
+        let static_info_fetch_freq_ms = 1_800_000 as u64;
+
         AppContext {
             league_id,
             team_ids,
             fetch_sleep_ms,
+            static_info_fetch_freq_ms,
         }
     })
 }

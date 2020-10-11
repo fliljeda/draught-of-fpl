@@ -4,14 +4,16 @@ use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use futures::join;
+use tokio::time::Duration;
 
 use crate::client::{Client, ClientError};
+use crate::storage::endpoints::FplEndpointsUpdate;
 use crate::storage::FplEndpoints;
 use crate::structs::*;
-use crate::storage::endpoints::FplEndpointsUpdate;
 
 #[allow(dead_code)]
 pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context: Arc<crate::AppContext>) {
+    let mut static_info_last_fetch: Option<time::Instant> = None;
     loop {
         let app_context = context.deref().clone();
         let fetch_sleep_ms = app_context.fetch_sleep_ms;
@@ -22,7 +24,7 @@ pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndp
         }
 
         log::info!("Fetching new endpoints");
-        let new = fetch_new_endpoints(&client, app_context);
+        let new = fetch_new_endpoints(&client, app_context, &mut static_info_last_fetch);
         match endpoints_lock.write() {
             Ok(mut t) => {
                 log::trace!("Grabbed the lock");
@@ -46,7 +48,14 @@ fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {
     };
 }
 
-pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEndpointsUpdate {
+pub fn fetch_and_initialize_endpoints(client: &Client, context: crate::AppContext) -> FplEndpoints {
+    let mut last_fetch: Option<time::Instant> = None;
+    let endpoints = fetch_new_endpoints(&client, context, &mut last_fetch);
+    let endpoints = FplEndpoints::initialize_from_update(endpoints);
+    endpoints
+}
+
+pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext, static_info_last_fetch: &mut Option<time::Instant>) -> FplEndpointsUpdate {
     let mut rt = tokio::runtime::Runtime::new().unwrap();
     let mut gw = 1;
     rt.block_on(async {
@@ -64,7 +73,7 @@ pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEn
             match game.current_event {
                 Some(current_gw) => {
                     gw = current_gw;
-                },
+                }
                 None => {
                     log::error!("Did not find new GW in fetch, using GW: {}", gw);
                 }
@@ -74,13 +83,23 @@ pub fn fetch_new_endpoints(client: &Client, context: crate::AppContext) -> FplEn
 
         // Start http_calls
         let live = client.get_gw_points_live(&gw);
-        let static_info = client.get_static();
         let team_gws_res = client.get_multiple_teams_gw(&teams, &gw);
         let team_infos_res = client.get_multiple_teams_info(&teams);
 
+        // Handle static because we don't need to update the endpoint too often
+        let static_info = match static_info_last_fetch {
+            Some(i) if i.elapsed() < Duration::from_millis(context.static_info_fetch_freq_ms) => {
+                None
+            }
+            _ => {
+                log::info!("Fetching new static info");
+                *static_info_last_fetch = Some(time::Instant::now());
+                handle_error_into_option(client.get_static().await)
+            }
+        };
+
         // Handle results when returned
         let live = handle_error_into_option(live.await);
-        let static_info = handle_error_into_option(static_info.await);
         let team_gws_res = team_gws_res.await;
         let team_infos_res = team_infos_res.await;
 
