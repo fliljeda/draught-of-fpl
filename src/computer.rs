@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::propcomp;
 use crate::storage::{FplEndpoints, LeagueTable};
-use crate::storage::table::Entry as TableEntry;
+use crate::storage::table::{Entry as TableEntry, ProjectedPointsExplanation};
 use crate::storage::table::Player as TablePlayer;
 use crate::storage::table::Position as PlayerPosition;
 
@@ -40,7 +40,6 @@ pub fn league_table_computer(lock: Arc<RwLock<LeagueTable>>, endpoints_lock: Arc
             }
             None => (),
         }
-
     }
 }
 
@@ -56,7 +55,6 @@ pub fn compute_new_league_table(endpoints: FplEndpoints) -> Option<LeagueTable> 
 }
 
 fn compute_league_entries(endpoints: &FplEndpoints) -> Vec<TableEntry> {
-
     let entries: Vec<TableEntry> = endpoints.details.league_entries.iter()
         .map(|entry| {
             compute_league_entry(endpoints, entry.entry_id)
@@ -71,7 +69,7 @@ fn get_total_points_before_gw(endpoints: &FplEndpoints, id: u32) -> i32 {
     team_info.overall_points - team_info.event_points
 }
 
-fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry{
+fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry {
     let players = extract_players(endpoints, id);
 
     let owner_name = propcomp::get_team_owner_name(endpoints, id);
@@ -80,19 +78,20 @@ fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry{
     let gw_points = players.iter()
         .filter(|p| p.on_field)
         .map(|p| p.points).sum();
-    let gw_projected_points = calculate_projected_points(&players);
+    let (gw_projected_points, projected_points_explanations) = calculate_projected_points(&players);
 
     let total_points_before_gw = get_total_points_before_gw(endpoints, id);
     let total_points = total_points_before_gw + gw_points;
     let total_projected_points = total_points_before_gw + gw_projected_points;
 
-    TableEntry{
+    TableEntry {
         owner_name,
         team_name,
         total_points,
         total_projected_points,
         gw_points,
         gw_projected_points,
+        projected_points_explanations,
         players,
     }
 }
@@ -101,7 +100,7 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
     let mut players = Vec::new();
     let team_entry = endpoints.teams_gws.get(&team_id)
         .expect(&format!("Could not find team GW info from team {}", team_id));
-    for pick in  team_entry.picks.iter() {
+    for pick in team_entry.picks.iter() {
         let player_id = pick.element as u32;
 
         let id = player_id;
@@ -143,7 +142,7 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
 }
 
 
-fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
+fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<ProjectedPointsExplanation>) {
     let mut projected_playing_players: Vec<&TablePlayer> = players.iter()
         .filter(|p| (p.on_field && p.has_played) || (p.on_field && !p.fixtures_finished))
         .collect();
@@ -154,21 +153,23 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
     benched_players.sort_by_key(|p| p.pick_number);
 
     let mut gks: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p | p.team_pos.number == 1)
+        .filter(|p| p.team_pos.number == 1)
         .map(|p| *p)
         .collect();
     let mut defs: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p | p.team_pos.number == 2)
+        .filter(|p| p.team_pos.number == 2)
         .map(|p| *p)
         .collect();
     let mut mids: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p | p.team_pos.number == 3)
+        .filter(|p| p.team_pos.number == 3)
         .map(|p| *p)
         .collect();
     let mut fwds: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p | p.team_pos.number == 4)
+        .filter(|p| p.team_pos.number == 4)
         .map(|p| *p)
         .collect();
+
+    let mut subbed_in_players: Vec<&TablePlayer> = Vec::new();
 
     // Sub in benched players if too few are on pitch, these will always have a space in the team
     // for these players as a standard team requires a certain amount of players at each position
@@ -178,6 +179,7 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
             1 => {
                 if gks.len() < 1 {
                     projected_playing_players.push(p);
+                    subbed_in_players.push(p);
                     gks.push(p);
                     retain = false;
                 }
@@ -185,6 +187,7 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
             2 => {
                 if defs.len() < 3 {
                     projected_playing_players.push(p);
+                    subbed_in_players.push(p);
                     defs.push(p);
                     retain = false;
                 }
@@ -192,6 +195,7 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
             3 => {
                 if mids.len() < 2 {
                     projected_playing_players.push(p);
+                    subbed_in_players.push(p);
                     mids.push(p);
                     retain = false;
                 }
@@ -199,6 +203,7 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
             4 => {
                 if fwds.len() < 1 {
                     projected_playing_players.push(p);
+                    subbed_in_players.push(p);
                     fwds.push(p);
                     retain = false;
                 }
@@ -213,10 +218,31 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
     // any substitution must have taken place before
     benched_players.iter().for_each(|p| {
         if projected_playing_players.len() < 11 && p.team_pos.number != 1 {
-             projected_playing_players.push(p);
+            projected_playing_players.push(p);
+            subbed_in_players.push(p);
         }
     });
 
+    let mut explanations: Vec<ProjectedPointsExplanation> = Vec::new();
+    projected_playing_players.iter().for_each(|p| {
+        let proj_diff = p.projected_points - p.points;
+        let bonus_opt = if proj_diff != 0 { Some(proj_diff) } else { None };
 
-    projected_playing_players.iter().map(|p| p.projected_points).sum()
+        let subbed_pts_opt = if subbed_in_players.iter().any(|p_compare| p.id == p_compare.id) {
+            Some(p.points)
+        } else {
+            None
+        };
+
+        if bonus_opt.is_some() || subbed_pts_opt.is_some() {
+            let x = ProjectedPointsExplanation {
+                name: p.display_name.clone(),
+                bonus_points: bonus_opt,
+                subbed_points: subbed_pts_opt,
+            };
+            explanations.push(x);
+        }
+    });
+
+    (projected_playing_players.iter().map(|p| p.projected_points).sum(), explanations)
 }
