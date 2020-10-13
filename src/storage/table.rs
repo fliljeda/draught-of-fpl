@@ -30,11 +30,26 @@ pub struct Entry {
     // certain substitutions
     pub gw_projected_points: i32,
 
+    // List of objects containing simple information about the projected points
+    pub projected_points_explanations: Vec<ProjectedPointsExplanation>,
+
     // Name of the owner of the FPL team
     pub owner_name: String,
 
     // Array containing detailed information of each player
     pub players: Vec<Player>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ProjectedPointsExplanation {
+    // Name of player
+    pub name: String,
+
+    // Bonus points of the player if exists (diff in points and projected points)
+    pub bonus_points: Option<i32>,
+
+    // Points of the players if subbed on (not projected)
+    pub subbed_points: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
