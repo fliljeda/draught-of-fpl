@@ -219,9 +219,11 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<Projected
     // the team size cap is the issue: 11, except for goalkeepers, they can't both fit and
     // any substitution must have taken place before
     benched_players.iter().for_each(|p| {
-        if projected_playing_players.len() < 11 && p.team_pos.number != 1 && p.has_played {
+        if projected_playing_players.len() < 11 && p.team_pos.number != 1 {
             projected_playing_players.push(p);
-            subbed_in_players.push(p);
+            if p.has_played { 
+                subbed_in_players.push(p);
+            }
         }
     });
 
