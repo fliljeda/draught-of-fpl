@@ -50,7 +50,7 @@ function setUpdatedScores(table){
         var total_points = teamVals["total_points"]
         var total_projected_points = teamVals["total_projected_points"]
         var gw_points = teamVals["gw_points"]
-        var gw_projected_points = teamVals["gw_points"]
+        var gw_projected_points = teamVals["gw_projected_points"]
 
         var proj_total_str = (total_points != total_projected_points ? (" (" +  total_projected_points + ")") : "")
         var proj_gw_str = (gw_points != gw_projected_points ? (" (" +  gw_projected_points + ")") : "")
