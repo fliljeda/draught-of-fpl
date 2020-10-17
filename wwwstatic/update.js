@@ -76,7 +76,7 @@ function setUpdatedScores(table){
                 var b = expl["bonus_points"]
                 var s = expl["subbed_points"]
                 if(s) {
-                    div.innerHTML = n + " " + b + "p " + (b ? "(" + b + " bonus)" : "") + " sub"
+                    div.innerHTML = n + " " + s + "p " + (b ? "(" + b + " bonus)" : "") + " sub"
                 } else if (b) {
                     div.innerHTML = n + " " + b + "p bonus"
                 }
