@@ -14,6 +14,9 @@ pub struct LeagueTable {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Entry {
+    // The code of the team
+    pub team_code: u32,
+
     // The name of the draft league team
     pub team_name: String,
 
@@ -31,7 +34,7 @@ pub struct Entry {
     pub gw_projected_points: i32,
 
     // List of objects containing simple information about the projected points
-    pub projected_points_explanations: Vec<ProjectedPointsExplanation>,
+    pub projected_points_explanation: Vec<ProjectedPointsExplanation>,
 
     // Name of the owner of the FPL team
     pub owner_name: String,

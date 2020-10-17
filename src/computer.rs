@@ -70,6 +70,7 @@ fn get_total_points_before_gw(endpoints: &FplEndpoints, id: u32) -> i32 {
 }
 
 fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry {
+    let team_code = id;
     let players = extract_players(endpoints, id);
 
     let owner_name = propcomp::get_team_owner_name(endpoints, id);
@@ -78,20 +79,21 @@ fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry {
     let gw_points = players.iter()
         .filter(|p| p.on_field)
         .map(|p| p.points).sum();
-    let (gw_projected_points, projected_points_explanations) = calculate_projected_points(&players);
+    let (gw_projected_points, projected_points_explanation) = calculate_projected_points(&players);
 
     let total_points_before_gw = get_total_points_before_gw(endpoints, id);
     let total_points = total_points_before_gw + gw_points;
     let total_projected_points = total_points_before_gw + gw_projected_points;
 
     TableEntry {
+        team_code,
         owner_name,
         team_name,
         total_points,
         total_projected_points,
         gw_points,
         gw_projected_points,
-        projected_points_explanations,
+        projected_points_explanation,
         players,
     }
 }
