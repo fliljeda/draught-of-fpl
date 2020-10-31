@@ -229,22 +229,24 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<Projected
 
     let mut explanations: Vec<ProjectedPointsExplanation> = Vec::new();
     projected_playing_players.iter().for_each(|p| {
-        let proj_diff = p.projected_points - p.points;
-        let bonus_opt = if proj_diff != 0 { Some(proj_diff) } else { None };
+        if p.has_played && p.points > 0 {
+            let proj_diff = p.projected_points - p.points;
+            let bonus_opt = if proj_diff != 0 { Some(proj_diff) } else { None };
 
-        let subbed_pts_opt = if subbed_in_players.iter().any(|p_compare| p.id == p_compare.id) {
-            Some(p.points)
-        } else {
-            None
-        };
-
-        if bonus_opt.is_some() || subbed_pts_opt.is_some() {
-            let x = ProjectedPointsExplanation {
-                name: p.display_name.clone(),
-                bonus_points: bonus_opt,
-                subbed_points: subbed_pts_opt,
+            let subbed_pts_opt = if subbed_in_players.iter().any(|p_compare| p.id == p_compare.id) {
+                Some(p.points)
+            } else {
+                None
             };
-            explanations.push(x);
+
+            if bonus_opt.is_some() || subbed_pts_opt.is_some() {
+                let x = ProjectedPointsExplanation {
+                    name: p.display_name.clone(),
+                    bonus_points: bonus_opt,
+                    subbed_points: subbed_pts_opt,
+                };
+                explanations.push(x);
+            }
         }
     });
 
