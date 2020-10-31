@@ -75,8 +75,8 @@ function setUpdatedScores(table){
                 var n = expl["name"]
                 var b = expl["bonus_points"]
                 var s = expl["subbed_points"]
-                if(s) {
-                    div.innerHTML = n + " " + s + "p " + (b ? "(" + b + " bonus)" : "") + " sub"
+                if(s != null) {
+                    div.innerHTML = n + " " + s + "p " + (b ? "(+" + b + " bonus)" : "") + " sub"
                 } else if (b) {
                     div.innerHTML = n + " " + b + "p bonus"
                 }
@@ -85,9 +85,6 @@ function setUpdatedScores(table){
         } else {
             proj_button.style.visibility = "hidden";
         }
-
-
-
 
         teamContainer.append(clone)
     }
