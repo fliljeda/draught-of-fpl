@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use futures::future::join_all;
 
 
-const FPL_API_BASE: &str = "https://draft.premierleague.com/api";
-const DEFAULT_LOCAL_API_BASE: &str = "/fpl/api";
+pub const FPL_API_BASE: &str = "https://draft.premierleague.com/api";
+pub const DEFAULT_LOCAL_API_BASE: &str = "/fpl/api";
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -304,7 +304,7 @@ mod tests {
         let client = Client::new_local(None).unwrap();
 
         assert_eq!(client.local, true);
-        assert_eq!(client.get_base_url(), LOCAL_API_BASE);
+        assert_eq!(client.get_base_url(), DEFAULT_LOCAL_API_BASE);
 
         let league_code: u32 = 305;
         let gw: u32 =  1;
@@ -446,7 +446,7 @@ mod tests {
     #[tokio::test]
     async fn local_test_multiple_team_info() -> Result<(), ClientError> {
         let client = Client::new_local(None).unwrap();
-        let game = client.get_game().await?;
+        let _game = client.get_game().await?;
 
         let details = client.get_league_details(&305).await?;
         let teams: Vec<u32> = details.league_entries.iter()
