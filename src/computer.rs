@@ -144,6 +144,7 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
 }
 
 
+// Calculates the total number of points for the team
 fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<ProjectedPointsExplanation>) {
     let mut projected_playing_players: Vec<&TablePlayer> = players.iter()
         .filter(|p| (p.on_field && p.has_played) || (p.on_field && !p.fixtures_finished))
@@ -220,8 +221,14 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<Projected
     // any substitution must have taken place before
     benched_players.iter().for_each(|p| {
         if projected_playing_players.len() < 11 && p.team_pos.number != 1 {
-            projected_playing_players.push(p);
-            if p.has_played { 
+
+            // Reserve slot in projected playing players benched players either haven't finished
+            // their fixture or have played. This excludes players on the bench that haven't and
+            // will not play this GW.
+            if !p.fixtures_finished || p.has_played {
+                projected_playing_players.push(p);
+            }
+            if p.has_played {
                 subbed_in_players.push(p);
             }
         }
