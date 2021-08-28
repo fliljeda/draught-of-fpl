@@ -1,11 +1,14 @@
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::{thread, time};
 use std::sync::{Arc, RwLock};
 
 use crate::propcomp;
 use crate::storage::{FplEndpoints, LeagueTable};
-use crate::storage::table::{Entry as TableEntry, ProjectedPointsExplanation};
+use crate::storage::table::{Entry as TableEntry, H2HInfo, ProjectedPointsExplanation, Scoring};
 use crate::storage::table::Player as TablePlayer;
 use crate::storage::table::Position as PlayerPosition;
+use crate::storage::table::H2HMatch as TableH2HMatch;
 
 #[allow(dead_code)]
 pub fn league_table_computer(lock: Arc<RwLock<LeagueTable>>, endpoints_lock: Arc<RwLock<FplEndpoints>>) {
@@ -46,12 +49,53 @@ pub fn league_table_computer(lock: Arc<RwLock<LeagueTable>>, endpoints_lock: Arc
 pub fn compute_new_league_table(endpoints: FplEndpoints) -> Option<LeagueTable> {
     let mut entries = compute_league_entries(&endpoints);
     entries.sort_by_key(|x| std::cmp::Reverse(x.total_points));
+
+    let matches = compute_all_league_matches(&endpoints);
     let table = LeagueTable {
         entries,
         code: propcomp::get_league_id(&endpoints),
         name: propcomp::get_league_name(&endpoints),
+        scoring: propcomp::get_league_scoring(&endpoints),
+        matches,
     };
     Some(table)
+}
+
+fn compute_all_league_matches(endpoints: &FplEndpoints) -> Option<HashMap<u32, Vec<TableH2HMatch>>> {
+    match Scoring::from_fpl_str(&endpoints.details.league.scoring) {
+        Scoring::CLASSIC => None,
+        Scoring::H2H => {
+            let mut league_matches: HashMap<u32, Vec<TableH2HMatch>> = HashMap::new();
+            let n_gameweeks: u32 = endpoints.static_info.events.data.len().try_into().unwrap_or(38);
+            for gw in 1..(n_gameweeks+1) {
+                let gw_matches = compute_gw_league_matches(gw, endpoints);
+                league_matches.insert(gw, gw_matches);
+            }
+            Some(league_matches)
+        }
+    }
+}
+fn compute_gw_league_matches(gw: u32, endpoints: &FplEndpoints) -> Vec<TableH2HMatch> {
+    match &endpoints.details.matches {
+        Option::None => Vec::new(),
+        Option::Some(league_matches) => {
+            league_matches.iter()
+                .filter(|league_match| league_match.event == gw)
+                .map(|league_match| compute_table_league_match(league_match))
+                .collect()
+        }
+    }
+}
+
+fn compute_table_league_match(league_match: &crate::structs::details::H2HMatch) -> TableH2HMatch {
+    let gw = league_match.event;
+    let league_entry_1 = league_match.league_entry_1;
+    let league_entry_2 = league_match.league_entry_2;
+    let started = league_match.started;
+    let finished = league_match.finished;
+    TableH2HMatch {
+        gw, league_entry_1, league_entry_2, started, finished
+    }
 }
 
 fn compute_league_entries(endpoints: &FplEndpoints) -> Vec<TableEntry> {
@@ -85,6 +129,8 @@ fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry {
     let total_points = total_points_before_gw + gw_points;
     let total_projected_points = total_points_before_gw + gw_projected_points;
 
+    let h2h_info = compute_h2h_info(endpoints, id);
+
     TableEntry {
         team_code,
         owner_name,
@@ -95,7 +141,36 @@ fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry {
         gw_projected_points,
         projected_points_explanation,
         players,
+        h2h_info,
     }
+}
+
+
+fn compute_h2h_info(endpoints: &FplEndpoints, id: u32) -> Option<H2HInfo> {
+
+    let team_id = propcomp::get_team_id_from_entry_id(endpoints, id);
+
+    let team_standings = match endpoints.details.standings.iter().find(|entry| entry.league_entry == team_id) {
+        None => {
+            return None;
+        }
+        Some(standings) => standings, 
+    };
+    
+    let points: i32 = team_standings.total;
+    let matches_drawn: u32 = team_standings.matches_drawn.unwrap_or(0);
+    let matches_lost: u32 = team_standings.matches_lost.unwrap_or(0);
+    let matches_won: u32 = team_standings.matches_won.unwrap_or(0);
+    let matches_played: u32 = matches_won + matches_drawn + matches_lost;
+    let current_opponent: u32 = propcomp::get_current_h2h_opponent(endpoints, id);
+    Some(H2HInfo {
+        points,
+        matches_won,
+        matches_played,
+        matches_drawn,
+        matches_lost,
+        current_opponent,
+    })
 }
 
 fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {

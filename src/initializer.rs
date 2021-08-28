@@ -26,7 +26,7 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn initialize() -> AppConfig {
         let config_file_content = read_config_file();
-        let config: AppConfig = toml::from_str(config_file_content.as_str()).unwrap();
+        let config: AppConfig = toml::from_str(config_file_content.as_str()).expect("Could not parse application config file");
         config
     }
 }
@@ -63,7 +63,7 @@ pub fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
     rt.block_on(async {
         let game = client.get_game().await.unwrap();
         game.current_event.expect("No game week found when initializing appContext, must be preseason!");
-        let details = client.get_league_details(&league_id).await.unwrap();
+        let details = client.get_league_details(&league_id).await.expect("Something went wrong with parsing league details in initialization");
 
         let team_ids = details.league_entries.iter().map(|x| x.entry_id).collect();
 

@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LeagueTable {
@@ -10,6 +11,12 @@ pub struct LeagueTable {
 
     // The name of the draft league
     pub name: String,
+
+    // The scoring method for the leageu. Either CLASSIC or H2H
+    pub scoring: Scoring,
+
+    // Only present if league is H2H. A map between gameweek and a vector of unordered matches.
+    pub matches: Option<HashMap<u32,Vec<H2HMatch>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -41,6 +48,9 @@ pub struct Entry {
 
     // Array containing detailed information of each player
     pub players: Vec<Player>,
+
+    // Struct containing H2H information   
+    pub h2h_info: Option<H2HInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -168,4 +178,39 @@ pub struct PointSource {
 
     // The identifying string for this point source type (used by FPL to calculate points
     pub stat: String,
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Scoring {
+    H2H, CLASSIC
+}
+
+impl Scoring {
+    pub fn from_fpl_str(fpl_scoring_str: &str) -> Scoring {
+        match fpl_scoring_str {
+            "c" => Scoring::CLASSIC,
+            "h" => Scoring::H2H,
+            _ => Scoring::CLASSIC,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct H2HMatch {
+    pub gw: u32,
+    pub league_entry_1: u32,
+    pub league_entry_2: u32,
+    pub started: bool,
+    pub finished: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct H2HInfo {
+    pub points: i32,
+    pub matches_drawn: u32, 
+    pub matches_lost: u32,
+    pub matches_played: u32,
+    pub matches_won: u32,
+    pub current_opponent: u32,
 }

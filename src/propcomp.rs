@@ -1,8 +1,15 @@
 // Computes the basic properties from endpoint objects
+// Some functions expect the callers to ensure the input is valid.
+//
+// Sometimes team_id and entry_id are used as an ID for a FPL league team. 
+// There are two different IDs for each league team and it is not exactly
+// understood what the difference is, but they both are used for different
+// parts of the FPL api.
 use crate::storage::{
     table::{
         PointSource as TablePointSource,
         Team as TableTeam,
+        Scoring
     },
     FplEndpoints
 };
@@ -234,6 +241,10 @@ pub fn get_league_id(endpoints: &FplEndpoints) -> u32 {
     endpoints.details.league.id
 }
 
+pub fn get_league_scoring(endpoints: &FplEndpoints) -> Scoring {
+    Scoring::from_fpl_str(&endpoints.details.league.scoring)
+}
+
 pub fn get_team_name(endpoints: &FplEndpoints, team_id: u32) -> String {
     let placeholder = String::from("<Team Name Unknown>");
     match get_team_info_entry(endpoints, team_id) {
@@ -259,6 +270,38 @@ pub fn get_team_owner_name(endpoints: &FplEndpoints, team_id: u32) -> String {
         }
     }
 }
+
+// Returns 0 if ID does not exist or if not H2H league.
+pub fn get_current_h2h_opponent(endpoints: &FplEndpoints, team_id: u32) -> u32 {
+    let current_gw = endpoints.game.current_event.expect("Current event (gw) not present in endpoints when computing properties");
+
+    // The h2hmatch structure uses entry_id as the team identifier
+    let team_id = get_team_id_from_entry_id(endpoints, team_id);
+    if let Some(league_matches) = &endpoints.details.matches {
+        let h2h_match_opt = league_matches.iter().find(|league_match| league_match.event == current_gw && (league_match.league_entry_1 == team_id || league_match.league_entry_2 == team_id));
+        if let Some(h2h_match) = h2h_match_opt {
+            let opponent = if h2h_match.league_entry_1 == team_id { h2h_match.league_entry_2 } else { h2h_match.league_entry_1 };
+            return get_entry_id_from_team_id(endpoints, opponent);
+        }
+    }
+    return 0;
+}
+
+// Returns 0 if ID does not exist.
+pub fn get_team_id_from_entry_id(endpoints: &FplEndpoints, entry_id: u32) -> u32 {
+    endpoints.details.league_entries.iter()
+        .find(|entry| entry.entry_id == entry_id)
+        .map(|entry| entry.id)
+        .unwrap_or(0)
+} 
+
+// Returns 0 if ID does not exist.
+pub fn get_entry_id_from_team_id(endpoints: &FplEndpoints, team_id: u32) -> u32 {
+    endpoints.details.league_entries.iter()
+        .find(|entry| entry.id == team_id)
+        .map(|entry| entry.entry_id)
+        .unwrap_or(0)
+} 
 
 fn get_player_from_static(endpoints: &FplEndpoints, player_id: u32) -> &StaticElement {
     let i = (player_id - 1) as usize;
