@@ -40,7 +40,9 @@ const app = Vue.createApp({
     });
 
     // Continuously fetch data in intervals
-    setInterval(httpGetAsync(dof_url, onResp), 5000);
+    setInterval(function(resp) {
+      httpGetAsync(dof_url, onResp);
+    }, 5000);
   },
   data() {
     return {
@@ -49,7 +51,7 @@ const app = Vue.createApp({
     }
   },
   methods: {
-    addNewTodo() {
+    doSomething() {
     },
     updateTeams() {
 
@@ -67,14 +69,18 @@ const app = Vue.createApp({
 })
 
 teamCard = {
-  computed: {
+  data() {
+    return {
+      x: 0,
+      y: 0
+    }
   },
-  methods: {
+  computed: {
     getTable() {
       return this.$parent.table;
     },
     points() {
-      let scoring = this.getTable().scoring;
+      let scoring = this.getTable.scoring;
       if (scoring === "H2H") {
         return this.team.h2h_info.points;
       } else {
@@ -82,13 +88,36 @@ teamCard = {
       }
     },
     opponent() {
-      return this.getTable().entries.find(team => team.team_code == this.team.h2h_info.current_opponent);
+      return this.getTable.entries.find(team => team.team_code == this.team.h2h_info.current_opponent);
     }
   },
+  methods: {
+  },
   template: `
-    <div>
-      {{ team.team_name }} by {{ team.owner_name}} with {{ points() }} points
-      is facing {{ opponent().team_name }} with {{ opponent().h2h_info.points }} points
+    <div class="team-card" >
+      <div> 
+        <div style="font-size: 1em; display: flex; flex-flow: row;"> 
+          <div> {{ team.team_name }} </div>
+          <div style="font-size: 1.2em; margin-left: auto; margin-top: auto; margin-bottom: auto"> {{ points }}  </div> 
+        </div>
+
+        <div style="display: flex; flex-flow: row;"> 
+          <div> GW:  {{ team.gw_points}} ({{ team.gw_projected_points }}) </div>
+          <div style="margin: auto; padding: 2px; background-color:rgb(233, 107, 103); font-size: 0.7em;"> 
+            {{ opponent.gw_points }} ({{ opponent.gw_projected_points }}) {{ opponent.team_name }}
+          </div>
+        </div>
+        <div style="font-size:0.5em" v-for="player in team.players" :key="player.id" > 
+          <div style="display: flex; flex-flow: row;" v-if="player.on_field">
+            <img style="width: 2em ; height: 2.5em;" v-bind:src="player.team.shirt_url" /> 
+
+            <div v-if="player.has_played || !player.fixtures_finished"> {{ player.display_name }}: {{ player.points }} </div> 
+            <div v-else>
+              <div v-if="player.has_played || !player.fixtures_finished"> {{ player.display_name }}: {{ player.points }} </div> 
+            </div>
+          </di>
+        </div> 
+      </div>
     </div>
   `,
   props: {

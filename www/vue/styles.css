@@ -12,8 +12,8 @@
 }
 
 @keyframes oskarmove {
-  from {top: 50vh; left: 50vw}
-  to {top: 4vw; left: 4vw}
+  from {top: calc(50vh - (10vw + 10vh)/4); left: calc(50vw - (10vw + 10vh)/4)}
+  to {top: 1vw; left: 1vh}
 }
 
 
@@ -22,11 +22,9 @@
   src: url("fonts/Manrope/Manrope-VariableFont_wght.ttf");
 }
 
-
-
 #oskar {
-  height: 5vw;
-  width: 5vw;
+  height: calc((7vw + 7vh)/2);
+  width: calc((7vw + 7vh)/2);
   display: block;
   margin-left: auto;
   margin-right: auto;
@@ -34,8 +32,8 @@
 
 #oskartext {
   text-align: center;
-  font-size: 1vw; 
-  width: 10vw;
+  font-size: calc((1vw+1vh)); 
+  width: calc((10vw + 10vh)/2);
   margin: auto;
   font-weight: 600;
   color: rgb(82, 81, 81);
@@ -43,7 +41,15 @@
 }
 
 #loader {
-  width: 10vw;
+  width: calc((10vw + 10vh)/2);
+  position: absolute;
+  left: calc(50vw - (10vw + 10vh)/4);
+  top: calc(50vh - (10vw + 10vh)/4);
+}
+
+#card-holder {
+  margin: calc((3vw + 3vh)/2) 12.5vw;
+  display: block;
 }
 
 body {
@@ -51,6 +57,13 @@ body {
   /* font-family: 'Helvetica', sans-serif, ; */
   color: rgb(82, 81, 81);
   background-color: rgba(243, 239, 220, 0.993);
+}
+
+.team-card {
+  width: 60vw;
+  background-color: burlywood;
+  margin: 1vh auto;
+  padding: calc(0.5vh + 0.5vw);
 }
 
 .center {
