@@ -8,6 +8,7 @@ use crate::storage::{FplEndpoints, LeagueTable};
 use crate::storage::table::{Entry as TableEntry, H2HInfo, ProjectedPointsExplanation, Scoring};
 use crate::storage::table::Player as TablePlayer;
 use crate::storage::table::Position as PlayerPosition;
+use crate::storage::table::PlayStatus as PlayerPlayStatus;
 use crate::storage::table::H2HMatch as TableH2HMatch;
 
 #[allow(dead_code)]
@@ -123,7 +124,9 @@ fn compute_league_entry(endpoints: &FplEndpoints, id: u32) -> TableEntry {
     let gw_points = players.iter()
         .filter(|p| p.on_field)
         .map(|p| p.points).sum();
-    let (gw_projected_points, projected_points_explanation) = calculate_projected_points(&players);
+
+    let gw_projected_points = calculate_projected_points(&players);
+    let projected_points_explanation = calculate_projected_point_explanation(&players);
 
     let total_points_before_gw = get_total_points_before_gw(endpoints, id);
     let total_points = total_points_before_gw + gw_points;
@@ -210,112 +213,39 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
             has_played,
             fixtures_finished,
             has_upcoming_fixtures,
+            play_status: PlayerPlayStatus::Unknown,
+            
         };
         players.push(player);
     }
-
+    calculate_play_status(&mut players);
 
     players
 }
 
-
 // Calculates the total number of points for the team
-fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<ProjectedPointsExplanation>) {
-    let mut projected_playing_players: Vec<&TablePlayer> = players.iter()
-        .filter(|p| (p.on_field && p.has_played) || (p.on_field && !p.fixtures_finished))
-        .collect();
-
-    let mut benched_players: Vec<&TablePlayer> = players.iter()
-        .filter(|p| p.pick_number >= 12 && !p.on_field)
-        .collect();
-    benched_players.sort_by_key(|p| p.pick_number);
-
-    let mut gks: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p| p.team_pos.number == 1)
-        .map(|p| *p)
-        .collect();
-    let mut defs: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p| p.team_pos.number == 2)
-        .map(|p| *p)
-        .collect();
-    let mut mids: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p| p.team_pos.number == 3)
-        .map(|p| *p)
-        .collect();
-    let mut fwds: Vec<&TablePlayer> = projected_playing_players.iter()
-        .filter(|p| p.team_pos.number == 4)
-        .map(|p| *p)
-        .collect();
-
-    let mut subbed_in_players: Vec<&TablePlayer> = Vec::new();
-
-    // Sub in benched players if too few are on pitch, these will always have a space in the team
-    // for these players as a standard team requires a certain amount of players at each position
-    benched_players.retain(|p| {
-        let mut retain = true;
-        match p.team_pos.number {
-            1 => {
-                if gks.len() < 1 {
-                    projected_playing_players.push(p);
-                    subbed_in_players.push(p);
-                    gks.push(p);
-                    retain = false;
-                }
-            }
-            2 => {
-                if defs.len() < 3 {
-                    projected_playing_players.push(p);
-                    subbed_in_players.push(p);
-                    defs.push(p);
-                    retain = false;
-                }
-            }
-            3 => {
-                if mids.len() < 2 {
-                    projected_playing_players.push(p);
-                    subbed_in_players.push(p);
-                    mids.push(p);
-                    retain = false;
-                }
-            }
-            4 => {
-                if fwds.len() < 1 {
-                    projected_playing_players.push(p);
-                    subbed_in_players.push(p);
-                    fwds.push(p);
-                    retain = false;
-                }
-            }
-            _ => {}
+fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
+    players.iter().filter(|p| {
+        match p.play_status {
+            PlayerPlayStatus::Playing | PlayerPlayStatus::SubbedIn{subbed_with: _} => true,
+            _ => false,
         }
-        retain
-    });
+    }).map(|p| p.projected_points).sum()
+}
 
-    // See if there are any benched players that we can fit in the on field eleven. Now only
-    // the team size cap is the issue: 11, except for goalkeepers, they can't both fit and
-    // any substitution must have taken place before
-    benched_players.iter().for_each(|p| {
-        if projected_playing_players.len() < 11 && p.team_pos.number != 1 {
-
-            // Reserve slot in projected playing players benched players either haven't finished
-            // their fixture or have played. This excludes players on the bench that haven't and
-            // will not play this GW.
-            if !p.fixtures_finished || p.has_played {
-                projected_playing_players.push(p);
-            }
-            if p.has_played {
-                subbed_in_players.push(p);
-            }
-        }
-    });
-
+fn calculate_projected_point_explanation(players: &Vec<TablePlayer>) -> Vec<ProjectedPointsExplanation> {
     let mut explanations: Vec<ProjectedPointsExplanation> = Vec::new();
-    projected_playing_players.iter().for_each(|p| {
+    players.iter().filter(|p| {
+        match p.play_status {
+            PlayerPlayStatus::Playing | PlayerPlayStatus::SubbedIn{subbed_with: _} => true,
+            _ => false,
+        }
+    }).for_each(|p| {
         if p.has_played && p.points > 0 {
             let proj_diff = p.projected_points - p.points;
             let bonus_opt = if proj_diff != 0 { Some(proj_diff) } else { None };
 
-            let subbed_pts_opt = if subbed_in_players.iter().any(|p_compare| p.id == p_compare.id) {
+            let subbed_pts_opt = if let PlayerPlayStatus::SubbedIn{subbed_with: _} = p.play_status {
                 Some(p.points)
             } else {
                 None
@@ -331,6 +261,132 @@ fn calculate_projected_points(players: &Vec<TablePlayer>) -> (i32, Vec<Projected
             }
         }
     });
+    explanations
+}
 
-    (projected_playing_players.iter().map(|p| p.projected_points).sum(), explanations)
+
+fn calculate_play_status(players: &mut Vec<TablePlayer>)  {
+
+    // Sort players by pick_number to ensure bench order
+    players.sort_by(|p1, p2| p1.pick_number.cmp(&p2.pick_number));
+
+    struct Substitution {
+        player_in: u32,
+        player_out: u32,
+    }
+
+    let mut subs: Vec<Substitution> = Vec::new(); 
+
+    for player in players.iter_mut() {
+
+        // Players on the field that we know has/will play this GW
+        if player.on_field && (player.has_played || !player.fixtures_finished) {
+            player.play_status = PlayerPlayStatus::Playing;
+        }
+
+        // Players who are on the bench
+        if !player.on_field {
+            player.play_status = PlayerPlayStatus::Benched;
+        }
+    }
+
+    // Create substitute list by going for each player and see which player they can be substituted with.
+    for player in players.iter().filter(|p| p.on_field) {
+        
+        // Player will be substituted off if we can find a substitute
+        if player.on_field && !player.has_played && player.fixtures_finished {
+
+            // Switch goalkeeper
+            if player.team_pos.number == 1 {
+                if let Some(other_gk) = players.iter().find(|p| p.team_pos.number == 1 && p.id != player.id) {
+                    if other_gk.has_played || other_gk.has_upcoming_fixtures {
+                        subs.push(Substitution {
+                            player_in: other_gk.id,
+                            player_out: player.id,
+                        })
+                    }
+                }
+                continue;
+            }
+
+            // Switch outfield player for a player on the bench according to the rules:
+            //   - Goalkeepers have already been handled earlier. The following logic makes that assumption. 
+            //   - Number of players in the same position is smaller than a FPL configured value (3 defender, 2 midfield, 1 forward)
+            //     means substitution is guaranteed.
+            //   - If not enough players are on the field (including substitutions) we can sub in that bench player
+            for benched_player in players.iter().filter(|p| p.pick_number >= 12 && !p.on_field && p.team_pos.number != 1 && (p.has_played || !p.fixtures_finished))  {
+                if subs.iter().any(|sub| sub.player_in == benched_player.id || sub.player_out == benched_player.id) {
+                    continue;
+                }
+
+                // Sub according to number of players in the same position
+                {
+                    // Players who are on the field according to FPL
+                    let on_field_players_same_pos = players.iter()
+                        .filter(|p| p.team_pos.number == benched_player.team_pos.number && p.play_status == PlayerPlayStatus::Playing)
+                        .count();
+                    
+                    // Players who are yet to be subbed by FPL but have been subbed in by this function
+                    let subbed_in_players_same_pos = subs.iter()
+                        .filter(|s| {
+                            if let Some(p) = players.iter().find(|p| p.id == s.player_in) {
+                                return p.team_pos.number == benched_player.team_pos.number;
+                            }
+                            return false;
+                        })
+                        .count();
+                    
+                    let playing_players_same_pos = on_field_players_same_pos + subbed_in_players_same_pos;
+
+                    let min_playing_players_same_pos = match benched_player.team_pos.number {
+                        2 => 3, // defender
+                        3 => 2, // midfielder
+                        4 => 1, // forward
+                        _ => 0, // should not happen
+                    };
+
+                    if playing_players_same_pos < min_playing_players_same_pos {
+                        subs.push(Substitution {
+                            player_in: benched_player.id,
+                            player_out: player.id,
+                        });      
+                        break;
+                    }
+                }
+
+                // Sub according to total number of playing players
+                {
+                    // Players who are on the field according to FPL
+                    let on_field_players_no_gk = players.iter()
+                        .filter(|p| p.play_status == PlayerPlayStatus::Playing && p.team_pos.number != 1)
+                        .count();
+                    
+                    // Players who are yet to be subbed by FPL but have been subbed in by this function
+                    let subbed_in_players = subs.len();
+
+                    let total_playing_players_no_gk = subbed_in_players + on_field_players_no_gk;
+
+                    if total_playing_players_no_gk < 10 {
+                        subs.push(Substitution {
+                            player_in: benched_player.id,
+                            player_out: player.id,
+                        });
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    for sub in subs {
+        // Set player as subbed in
+        if let Some(p) = players.iter_mut().find(|p| p.id == sub.player_in) {
+            p.play_status = PlayerPlayStatus::SubbedIn{subbed_with: sub.player_out};
+        }
+
+        // Set player as subbed out
+        if let Some(p) = players.iter_mut().find(|p| p.id == sub.player_out) {
+            p.play_status = PlayerPlayStatus::SubbedOff{subbed_with: sub.player_in};
+        }
+    }
 }

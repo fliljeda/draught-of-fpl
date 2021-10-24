@@ -112,6 +112,9 @@ pub struct Player {
 
     // Whether or not the player has any fixtures this gameweek
     pub has_upcoming_fixtures: bool,
+
+    // Indicates whether or not the player is playing (or may play), benched (or may play)
+    pub play_status: PlayStatus,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -213,4 +216,30 @@ pub struct H2HInfo {
     pub matches_played: u32,
     pub matches_won: u32,
     pub current_opponent: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type")]
+pub enum PlayStatus {
+
+    // player is selected on the field and has either played or can't yet be benched.
+    #[serde(rename = "playing")]
+    Playing,
+    
+    // player is selected on the bench and is NOT guaranteed to be subbed in.
+    #[serde(rename = "benched")]
+    Benched,
+
+    // player is selected on the bench and is guaranteed to be subbed in.
+    #[serde(rename = "subbed_in")]
+    SubbedIn{subbed_with: u32},
+
+    // player is selected on the fiedl and is guaranteed to be subbed off.
+    #[serde(rename = "subbed_off")]
+    SubbedOff{subbed_with: u32},
+
+    // not yet able to project what the status is for the player.
+    #[serde(rename = "none")]
+    Unknown,
 }
