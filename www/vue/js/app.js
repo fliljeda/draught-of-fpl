@@ -75,6 +75,9 @@ teamCard = {
       y: 0
     }
   },
+  props: {
+    team: Object
+  },
   computed: {
     getTable() {
       return this.$parent.table;
@@ -92,37 +95,61 @@ teamCard = {
     }
   },
   methods: {
+    getShirtUrl(player) {
+      if (player.team_pos.name == "GK") {
+        return player.team.gk_shirt_url;
+      } else {
+        return player.team.shirt_url;
+      }
+    },
+    getSubbedWith(player) {
+      let subbed_with_id = player.play_status.subbed_with;
+      return this.team.players.find(p => p.id == subbed_with_id);
+    }
   },
   template: `
     <div class="team-card" >
       <div> 
-        <div style="font-size: 1em; display: flex; flex-flow: row;"> 
+        <div style="font-size: 1.3em; display: flex; flex-flow: row;"> 
           <div> {{ team.team_name }} </div>
           <div style="font-size: 1.2em; margin-left: auto; margin-top: auto; margin-bottom: auto"> {{ points }}  </div> 
         </div>
 
         <div style="display: flex; flex-flow: row;"> 
-          <div> GW:  {{ team.gw_points}} ({{ team.gw_projected_points }}) </div>
-          <div style="margin: auto; padding: 2px; background-color:rgb(233, 107, 103); font-size: 0.7em;"> 
-            {{ opponent.gw_points }} ({{ opponent.gw_projected_points }}) {{ opponent.team_name }}
+          <div> GW:  {{ team.gw_points}} {{ team.gw_projected_points != team.gw_points ? ('(' + team.gw_projected_points + ')') : '' }} </div>
+          <div class="opponent"> 
+            {{ opponent.gw_points }} {{ opponent.gw_projected_points != opponent.gw_points ? ('(' + opponent.gw_projected_points + ')') : '' }} - {{ opponent.team_name }}
           </div>
         </div>
-        <div style="font-size:0.5em" v-for="player in team.players" :key="player.id" > 
-          <div style="display: flex; flex-flow: row;" v-if="player.on_field">
-            <img style="width: 2em ; height: 2.5em;" v-bind:src="player.team.shirt_url" /> 
-
-            <div v-if="player.has_played || !player.fixtures_finished"> {{ player.display_name }}: {{ player.points }} </div> 
-            <div v-else>
-              <div v-if="player.has_played || !player.fixtures_finished"> {{ player.display_name }}: {{ player.points }} </div> 
+        <div style="font-size:0.6em" v-for="player in team.players" :key="player.id" > 
+          <div v-if="player.on_field">
+            <div v-if="player.play_status.type == 'playing'" style="display: flex; flex-flow: row;" > 
+              <img v-bind:title="player.team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(player)" /> 
+              <div style="margin: auto 2px;" > 
+                {{ player.display_name }}: {{ player.points }} {{ player.projected_points != player.points ? ('(' + player.projected_points + ')') : '' }} 
+              </div>
+            </div> 
+            <div v-else style="display: flex; flex-flow: row;" >
+             
+              <div v-if="player.play_status.type == 'subbed_off'"  style="margin: auto 0px; display: flex; flex-flow: row;" > 
+                <div style="display: flex; flex-flow: row; opacity: 0.8;">
+                  <img v-bind:title="player.team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(player)" /> 
+                  <div style="margin: auto 2px"> {{ player.display_name }} </div> 
+                </div>
+                <div style="margin: auto 2px"> -> </div> 
+                <div style="display: flex; flex-flow: row;">
+                  <img v-bind:title="getSubbedWith(player).team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(getSubbedWith(player))" />
+                  <div style="margin: auto 2px"> 
+                    {{ getSubbedWith(player).display_name }}: {{ getSubbedWith(player).points }} {{ getSubbedWith(player).projected_points != getSubbedWith(player).points ? ('(' + getSubbedWith(player).projected_points + ')') : '' }}
+                  </div>
+                </div>
+              </div> 
             </div>
-          </di>
+          </div>
         </div> 
       </div>
     </div>
-  `,
-  props: {
-    team: Object
-  }
+  `
 }
 
 app.component('team-card', teamCard)
