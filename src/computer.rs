@@ -315,6 +315,8 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>)  {
             //     means substitution is guaranteed.
             //   - If not enough players are on the field (including substitutions) we can sub in that bench player
             for benched_player in players.iter().filter(|p| p.pick_number >= 12 && !p.on_field && p.team_pos.number != 1 && (p.has_played || !p.fixtures_finished))  {
+
+                // Skip this player if he is already part of a calculated substitution
                 if subs.iter().any(|sub| sub.player_in == benched_player.id || sub.player_out == benched_player.id) {
                     continue;
                 }
@@ -388,5 +390,9 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>)  {
         if let Some(p) = players.iter_mut().find(|p| p.id == sub.player_out) {
             p.play_status = PlayerPlayStatus::SubbedOff{subbed_with: sub.player_in};
         }
+    }
+
+    for p in players.iter_mut().filter(|p| p.play_status == PlayerPlayStatus::Unknown) {
+        p.play_status = PlayerPlayStatus::Playing;
     }
 }
