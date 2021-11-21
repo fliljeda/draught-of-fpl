@@ -277,11 +277,10 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>)  {
 
     let mut subs: Vec<Substitution> = Vec::new(); 
 
-    // Mark players preliminary as playing or benched
     for player in players.iter_mut() {
 
-        // Players on the field
-        if player.on_field {
+        // Players on the field that we know has/will play this GW
+        if player.on_field && (player.has_played || !player.fixtures_finished) {
             player.play_status = PlayerPlayStatus::Playing;
         }
 
