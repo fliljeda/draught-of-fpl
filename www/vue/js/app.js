@@ -135,9 +135,9 @@ teamCard = {
       // If the player has played and has no upcoming matches it is marked as green with class: dot-color-green
       // If the player has no upcoming matches and has not played: dot-color-red
       return {
-          "dot-color-yellow": player.has_upcoming_fixtures,
-          "dot-color-green": player.has_played && !player.has_upcoming_fixtures,
-          "dot-color-red": !player.has_played && !player.has_upcoming_fixtures
+          "dot-color-yellow": !player.fixtures_finished,
+          "dot-color-green": player.has_played && player.fixtures_finished,
+          "dot-color-red": !player.has_played && player.fixtures_finished
       }
     }
   },
