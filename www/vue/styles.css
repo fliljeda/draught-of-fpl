@@ -79,3 +79,19 @@ body {
   background-color:rgba(255, 8, 0, 0.425); 
   font-size: 0.7em;
 }
+
+.dot {
+  padding: 0.1em 0.5em;
+  margin: auto 0;
+  border-radius: 20%;
+}
+
+.dot-color-green {
+  background-color: rgba(59, 221, 86, 0.445);
+}
+.dot-color-yellow {
+  background-color: rgba(255, 241, 47, 0.555);
+}
+.dot-color-red {
+  background-color: rgba(255, 47, 47, 0.445);
+}

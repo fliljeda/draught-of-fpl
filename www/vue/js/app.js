@@ -69,12 +69,6 @@ const app = Vue.createApp({
 })
 
 teamCard = {
-  data() {
-    return {
-      x: 0,
-      y: 0
-    }
-  },
   props: {
     team: Object
   },
@@ -105,6 +99,46 @@ teamCard = {
     getSubbedWith(player) {
       let subbed_with_id = player.play_status.subbed_with;
       return this.team.players.find(p => p.id == subbed_with_id);
+    },
+    getPlayerPointsString(player) {
+      // Returns points on the format:
+      // <points> -- if player has no projected bonus points
+      // <points> (<points + bonus>)  -- if player has projected bonus points
+
+      let display_string = ""
+      display_string += player.points
+
+      let projected_points = player.projected_points  
+      if (projected_points != player.points ) {
+        display_string += ' (' + projected_points + ')'
+      }
+
+      return display_string
+    },
+    getTeamAndPointsString(team) {
+      // Returns points on the format:
+      // <points> -- if team has no projected bonus points
+      // <points> (<points + bonus>)  -- if team has projected bonus points
+      let display_string = ""
+      display_string += team.gw_points
+
+      let projected_points = team.gw_projected_points  
+      if (projected_points != team.gw_points ) {
+        display_string += ' (' + projected_points + ')'
+      }
+
+      return display_string
+    },
+    getPointsStatusColorClass(player) {
+      // Returns the class for what the status of the points are.
+      // If the player has upcoming matches it is marked as yellow with class: dot-color-yellow
+      // If the player has played and has no upcoming matches it is marked as green with class: dot-color-green
+      // If the player has no upcoming matches and has not played: dot-color-red
+      return {
+          "dot-color-yellow": player.has_upcoming_fixtures,
+          "dot-color-green": player.has_played && !player.has_upcoming_fixtures,
+          "dot-color-red": !player.has_played && !player.has_upcoming_fixtures
+      }
     }
   },
   template: `
@@ -116,33 +150,44 @@ teamCard = {
         </div>
 
         <div style="display: flex; flex-flow: row;"> 
-          <div> GW:  {{ team.gw_points}} {{ team.gw_projected_points != team.gw_points ? ('(' + team.gw_projected_points + ')') : '' }} </div>
+          <div> GW: {{ getTeamAndPointsString(team) }} </div>
           <div class="opponent"> 
-            {{ opponent.gw_points }} {{ opponent.gw_projected_points != opponent.gw_points ? ('(' + opponent.gw_projected_points + ')') : '' }} - {{ opponent.team_name }}
+            {{ getTeamAndPointsString(opponent) }} - {{ opponent.team_name }}
           </div>
         </div>
         <div style="font-size:0.6em" v-for="player in team.players" :key="player.id" > 
           <div v-if="player.on_field">
+
             <div v-if="player.play_status.type == 'playing'" style="display: flex; flex-flow: row;" > 
               <img v-bind:title="player.team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(player)" /> 
               <div style="margin: auto 2px;" > 
-                {{ player.display_name }}: {{ player.points }} {{ player.projected_points != player.points ? ('(' + player.projected_points + ')') : '' }} 
+                {{ player.display_name }}:
               </div>
+              <span class="dot" :class="getPointsStatusColorClass(player)">
+                  {{ getPlayerPointsString(player) }}
+              </span>
             </div> 
             <div v-else style="display: flex; flex-flow: row;" >
              
               <div v-if="player.play_status.type == 'subbed_off'"  style="margin: auto 0px; display: flex; flex-flow: row;" > 
+
                 <div style="display: flex; flex-flow: row; opacity: 0.8;">
                   <img v-bind:title="player.team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(player)" /> 
                   <div style="margin: auto 2px"> {{ player.display_name }} </div> 
                 </div>
+
                 <div style="margin: auto 2px"> -> </div> 
+
                 <div style="display: flex; flex-flow: row;">
                   <img v-bind:title="getSubbedWith(player).team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(getSubbedWith(player))" />
                   <div style="margin: auto 2px"> 
-                    {{ getSubbedWith(player).display_name }}: {{ getSubbedWith(player).points }} {{ getSubbedWith(player).projected_points != getSubbedWith(player).points ? ('(' + getSubbedWith(player).projected_points + ')') : '' }}
+                    {{ getSubbedWith(player).display_name }}:
                   </div>
+                  <span class="dot" :class="getPointsStatusColorClass(getSubbedWith(player))">
+                    {{ getPlayerPointsString(getSubbedWith(player)) }}
+                  </span>
                 </div>
+
               </div> 
             </div>
           </div>
