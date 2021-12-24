@@ -113,6 +113,12 @@ pub struct Player {
     // Whether or not the player has any fixtures this gameweek
     pub has_upcoming_fixtures: bool,
 
+    // The type of injury status the player has as marked by the FPL Towers
+    pub status: InjuryStatus,
+
+    // The news for the player if there are any. This includes the injury message and when the player is expected to make a return.
+    pub news: Option<String>,
+
     // Indicates whether or not the player is playing (or may play), benched (or may play)
     pub play_status: PlayStatus,
 }
@@ -216,6 +222,30 @@ pub struct H2HInfo {
     pub matches_played: u32,
     pub matches_won: u32,
     pub current_opponent: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum InjuryStatus {
+    Available,      // "a" Green marked
+    Doubt,          // "d" Yellow marked 
+    Unavailable,    // "u" Red marked (will not show up in list of players on FPL site)
+    // I see no point currently to use these, but I will let them stay in case they mean something
+    // and will refer their FPL status to Unavailable
+    //Injured,        // "i" Red marked
+    //Suspended,      // "s" Red marked
+    //N,      // "n" Red marked (not available? what does n stand for?)
+}
+
+impl InjuryStatus {
+    pub fn from_fpl_str(injury_status: &str) -> InjuryStatus {
+        match injury_status {
+            "a" => InjuryStatus::Available,
+            "d" => InjuryStatus::Doubt,
+            "u" | "i" | "s" | "n" => InjuryStatus::Unavailable,
+            _ => InjuryStatus::Available,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
