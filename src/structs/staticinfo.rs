@@ -26,7 +26,7 @@ pub struct Element {
     pub bps: Option<i32>,
     pub creativity: Option<String>,
     pub ep_this: Option<i32>,
-    pub status: Option<String>,
+    pub status: String,
     pub penalties_missed: Option<i32>,
     pub id: Option<i32>,
     pub element_type: i32,

@@ -197,6 +197,8 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
         let has_played = propcomp::compute_player_has_played(endpoints, player_id);
         let fixtures_finished = propcomp::compute_player_fixtures_has_finished(endpoints, player_id);
         let has_upcoming_fixtures = propcomp::compute_player_has_upcoming_fixtures(endpoints, player_id);
+        let news = propcomp::get_player_news(endpoints, player_id);
+        let status = propcomp::get_player_injury_status(endpoints, player_id);
 
         let player = TablePlayer {
             id,
@@ -213,8 +215,9 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
             has_played,
             fixtures_finished,
             has_upcoming_fixtures,
+            news,
+            status,
             play_status: PlayerPlayStatus::Unknown,
-            
         };
         players.push(player);
     }
