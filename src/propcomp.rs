@@ -9,7 +9,7 @@ use crate::storage::{
     table::{
         PointSource as TablePointSource,
         Team as TableTeam,
-        Scoring
+        Scoring, InjuryStatus
     },
     FplEndpoints
 };
@@ -58,6 +58,20 @@ pub fn get_player_points(endpoints: &FplEndpoints, player_id: u32) -> i32 {
 
 pub fn get_player_bps(endpoints: &FplEndpoints, player_id: u32) -> i32 {
     get_player_from_live(endpoints, player_id).stats.bps
+}
+
+pub fn get_player_injury_status(endpoints: &FplEndpoints, player_id: u32) -> InjuryStatus {
+    let injury_status_str = &get_player_from_static(endpoints, player_id).status;
+    InjuryStatus::from_fpl_str(&injury_status_str)
+}
+
+pub fn get_player_news(endpoints: &FplEndpoints, player_id: u32) -> Option<String> {
+    let news_opt = &get_player_from_static(endpoints, player_id).news;
+    match news_opt {
+        None => None,
+        Some(x) if x.is_empty()  => None,
+        Some(x) => Some(x.clone()),
+    }
 }
 
 // "is on field" happens if the player was selected to play on field or is a part of the substitutes
