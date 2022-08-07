@@ -1,12 +1,5 @@
-var HOST = "localhost"
-var PORT = "8000"
-var PAGE_TITLE = "FPL Draft"
-
-var dof_url = "https://" + HOST + ":" + PORT +  "/table"
-document.title = PAGE_TITLE
-
-fetchAndUpdate()
-setInterval(fetchAndUpdate, 30000);
+//fetchAndUpdate()
+//setInterval(fetchAndUpdate, 30000);
 
 function fetchAndUpdate() {
     httpGetAsync(dof_url, function (resp) {
@@ -14,15 +7,31 @@ function fetchAndUpdate() {
     });
 }
 
-
 function httpGetAsync(theUrl, callback)
 {
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
             callback(xmlHttp.responseText);
+        } else if (xmlHttp.readyState == 4) {
+            callback(null);
+        }
     }
     xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+function httpGetBlocking(theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
+            callback(xmlHttp.responseText);
+        } else if (xmlHttp.readyState == 4) {
+            callback(null);
+        };
+    }
+    xmlHttp.open("GET", theUrl, false); // true for asynchronous 
     xmlHttp.send(null);
 }
 
@@ -87,5 +96,28 @@ function setUpdatedScores(table){
         }
 
         teamContainer.append(clone)
+    }
+}
+
+// NEW!
+
+
+function get_projected_explanation() {
+    var list_of_explanations = teamVals["projected_points_explanation"]
+    if (list_of_explanations.length > 0) {
+        for(let expl of list_of_explanations) {
+            var div = document.createElement("div");
+            var n = expl["name"]
+            var b = expl["bonus_points"]
+            var s = expl["subbed_points"]
+            if(s != null) {
+                div.innerHTML = n + " " + s + "p " + (b ? "(+" + b + " bonus)" : "") + " sub"
+            } else if (b) {
+                div.innerHTML = n + " " + b + "p bonus"
+            }
+            proj_content.appendChild(div)
+        }
+    } else {
+        proj_button.style.visibility = "hidden";
     }
 }
