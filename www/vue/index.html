@@ -31,11 +31,12 @@
     </title>
 </head>
 <body class="bg-light">
+    <p id="leaguetitle"></p>
     <div id="loader" >
         <img id="oskar" class="spinner" src="resources/load.png"/>
-        <p id="oskartext">Fetching data</p>
+        <p id="loadertext">Loading data</p>
     </div>
-    <div>
+    <div >
         <!-- The Vue app-->
         <div id="app">
             <button style="visibility: hidden; position: absolute; top: 20vh; width: 15vw " @click="doSomething">

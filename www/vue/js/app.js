@@ -3,15 +3,16 @@
 function moveLoader() {
     document.getElementById("loader").classList.add("mover");
     document.getElementById("oskar").classList.remove("spinner");
+    document.getElementById("loadertext").innerHTML=""
 }
 
 function setLoaderTitle(title) {
-    document.getElementById("oskartext").innerHTML=title;
+    document.getElementById("leaguetitle").innerHTML=title;
 }
 
 function setLoaderFail() {
     document.getElementById("oskar").classList.remove("spinner");
-    document.getElementById("oskartext").innerHTML="Failed to fetch data.."
+    document.getElementById("loadertext").innerHTML="Failed to fetch data.."
 }
 
 function updateLoader(resp) {
@@ -144,12 +145,12 @@ teamCard = {
   template: `
     <div class="team-card" >
       <div> 
-        <div style="font-size: 1.3em; display: flex; flex-flow: row;"> 
+        <div style="font-size: 1.3em; " class="row-container"> 
           <div> {{ team.team_name }} </div>
           <div style="font-size: 1.2em; margin-left: auto; margin-top: auto; margin-bottom: auto"> {{ points }}  </div> 
         </div>
 
-        <div style="display: flex; flex-flow: row;"> 
+        <div class="row-container"> 
           <div> GW: {{ getTeamAndPointsString(team) }} </div>
           <div class="opponent"> 
             {{ getTeamAndPointsString(opponent) }} - {{ opponent.team_name }}
@@ -158,7 +159,7 @@ teamCard = {
         <div style="font-size:0.6em" v-for="player in team.players" :key="player.id" > 
           <div v-if="player.on_field">
 
-            <div v-if="player.play_status.type == 'playing'" style="display: flex; flex-flow: row;" > 
+            <div v-if="player.play_status.type == 'playing'" class="row-container"> 
               <img v-bind:title="player.team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(player)" /> 
               <div style="margin: auto 2px;" > 
                 {{ player.display_name }}:
@@ -167,18 +168,18 @@ teamCard = {
                   {{ getPlayerPointsString(player) }}
               </span>
             </div> 
-            <div v-else style="display: flex; flex-flow: row;" >
+            <div v-else class="row-container">
              
-              <div v-if="player.play_status.type == 'subbed_off'"  style="margin: auto 0px; display: flex; flex-flow: row;" > 
+              <div v-if="player.play_status.type == 'subbed_off'" class="row-container" style="margin: auto 0px;" > 
 
-                <div style="display: flex; flex-flow: row; opacity: 0.8;">
+                <div class="row-container" style="opacity: 0.8;">
                   <img v-bind:title="player.team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(player)" /> 
                   <div style="margin: auto 2px"> {{ player.display_name }} </div> 
                 </div>
 
                 <div style="margin: auto 2px"> -> </div> 
 
-                <div style="display: flex; flex-flow: row;">
+                <div class="row-container">
                   <img v-bind:title="getSubbedWith(player).team.name" style="width: 2em ; height: 2.5em;" v-bind:src="getShirtUrl(getSubbedWith(player))" />
                   <div style="margin: auto 2px"> 
                     {{ getSubbedWith(player).display_name }}:
@@ -190,6 +191,7 @@ teamCard = {
 
               </div> 
             </div>
+            <hline>
           </div>
         </div> 
       </div>
