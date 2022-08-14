@@ -58,25 +58,22 @@ fn read_config_file_flag() -> Option<String> {
 }
 
 
-pub fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
-    let mut rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async {
-        let game = client.get_game().await.unwrap();
-        game.current_event.expect("No game week found when initializing appContext, must be preseason!");
-        let details = client.get_league_details(&league_id).await.expect("Something went wrong with parsing league details in initialization");
+pub async fn initialize_app_context(client: &Client, league_id: u32) -> AppContext {
+    let game = client.get_game().await.unwrap();
+    game.current_event.expect("No game week found when initializing appContext, must be preseason!");
+    let details = client.get_league_details(&league_id).await.expect("Something went wrong with parsing league details in initialization");
 
-        let team_ids = details.league_entries.iter().map(|x| x.entry_id).collect();
+    let team_ids = details.league_entries.iter().map(|x| x.entry_id).collect();
 
 
-        let fetch_sleep_ms = 60_000 as u64;
+    let fetch_sleep_ms = 60_000 as u64;
 
-        let static_info_fetch_freq_ms = 1_800_000 as u64;
+    let static_info_fetch_freq_ms = 1_800_000 as u64;
 
-        AppContext {
-            league_id,
-            team_ids,
-            fetch_sleep_ms,
-            static_info_fetch_freq_ms,
-        }
-    })
+    AppContext {
+        league_id,
+        team_ids,
+        fetch_sleep_ms,
+        static_info_fetch_freq_ms,
+    }
 }
