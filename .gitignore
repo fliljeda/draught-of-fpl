@@ -2,6 +2,6 @@
 **/*.rs.bk
 /banished
 .idea/
-Cargo.lock
 Config.toml
 Rocket.toml
+/db
