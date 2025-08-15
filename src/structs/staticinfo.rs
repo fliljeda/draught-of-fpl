@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StaticInfo {
@@ -47,7 +47,7 @@ pub struct Element {
     pub assists: Option<i32>,
     pub own_goals: Option<i32>,
     pub penalties_saved: Option<i32>,
-    pub ep_next: Option<i32>,
+    pub ep_next: Option<String>,
     pub points_per_game: Option<String>,
     pub news_added: Option<String>,
     pub threat: Option<String>,

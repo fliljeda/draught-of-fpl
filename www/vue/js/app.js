@@ -1,18 +1,18 @@
 
 
 function moveLoader() {
-    document.getElementById("loader").classList.add("mover");
-    document.getElementById("oskar").classList.remove("spinner");
-    document.getElementById("loadertext").innerHTML=""
+  document.getElementById("loader").classList.add("mover");
+  document.getElementById("oskar").classList.remove("spinner");
+  document.getElementById("loadertext").innerHTML = ""
 }
 
 function setLoaderTitle(title) {
-    document.getElementById("leaguetitle").innerHTML=title;
+  document.getElementById("leaguetitle").innerHTML = title;
 }
 
 function setLoaderFail() {
-    document.getElementById("oskar").classList.remove("spinner");
-    document.getElementById("loadertext").innerHTML="Failed to fetch data.."
+  document.getElementById("oskar").classList.remove("spinner");
+  document.getElementById("loadertext").innerHTML = "Failed to fetch data.."
 }
 
 function updateLoader(resp) {
@@ -26,8 +26,8 @@ function updateLoader(resp) {
 
 const app = Vue.createApp({
   created() {
-    that=this;
-    onResp = function(resp) {
+    that = this;
+    onResp = function (resp) {
       if (resp) {
         that.table = JSON.parse(resp);
         that.updateTeams();
@@ -36,12 +36,12 @@ const app = Vue.createApp({
     }
 
     // Initial data fetch
-    httpGetAsync(dof_url, function(resp) {
+    httpGetAsync(dof_url, function (resp) {
       onResp(resp)
     });
 
     // Continuously fetch data in intervals
-    setInterval(function(resp) {
+    setInterval(function (resp) {
       httpGetAsync(dof_url, onResp);
     }, 5000);
   },
@@ -57,7 +57,7 @@ const app = Vue.createApp({
     updateTeams() {
 
       // Sort by points in reverse order to create elements with most points first
-      that.table.entries.sort((a,b) => {
+      that.table.entries.sort((a, b) => {
         if (that.table.scoring === "H2H") {
           return b.h2h_info.points - a.h2h_info.points;
         } else {
@@ -109,8 +109,8 @@ teamCard = {
       let display_string = ""
       display_string += player.points
 
-      let projected_points = player.projected_points  
-      if (projected_points != player.points ) {
+      let projected_points = player.projected_points
+      if (projected_points != player.points) {
         display_string += ' (' + projected_points + ')'
       }
 
@@ -123,8 +123,8 @@ teamCard = {
       let display_string = ""
       display_string += team.gw_points
 
-      let projected_points = team.gw_projected_points  
-      if (projected_points != team.gw_points ) {
+      let projected_points = team.gw_projected_points
+      if (projected_points != team.gw_points) {
         display_string += ' (' + projected_points + ')'
       }
 
@@ -136,9 +136,9 @@ teamCard = {
       // If the player has played and has no upcoming matches it is marked as green with class: dot-color-green
       // If the player has no upcoming matches and has not played: dot-color-red
       return {
-          "dot-color-yellow": !player.fixtures_finished,
-          "dot-color-green": player.has_played && player.fixtures_finished,
-          "dot-color-red": !player.has_played && player.fixtures_finished
+        "dot-color-yellow": !player.fixtures_finished,
+        "dot-color-green": player.has_played && player.fixtures_finished,
+        "dot-color-red": !player.has_played && player.fixtures_finished
       }
     }
   },
@@ -152,7 +152,7 @@ teamCard = {
 
         <div class="row-container"> 
           <div> GW: {{ getTeamAndPointsString(team) }} </div>
-          <div class="opponent"> 
+          <div v-if="opponent" class="opponent"> 
             {{ getTeamAndPointsString(opponent) }} - {{ opponent.team_name }}
           </div>
         </div>
@@ -191,7 +191,6 @@ teamCard = {
 
               </div> 
             </div>
-            <hline>
           </div>
         </div> 
       </div>

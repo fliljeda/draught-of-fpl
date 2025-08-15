@@ -1,7 +1,7 @@
-use std::{thread, time};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
+use std::{thread, time};
 
 use futures::join;
 use tokio::time::Duration;
@@ -12,7 +12,11 @@ use crate::storage::FplEndpoints;
 use crate::structs::*;
 
 #[allow(dead_code)]
-pub fn endpoint_cache_fetcher(client: Client, endpoints_lock: Arc<RwLock<FplEndpoints>>, context: Arc<crate::AppContext>) {
+pub fn endpoint_cache_fetcher(
+    client: Client,
+    endpoints_lock: Arc<RwLock<FplEndpoints>>,
+    context: Arc<crate::AppContext>,
+) {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         let mut static_info_last_fetch: Option<time::Instant> = None;
@@ -45,20 +49,28 @@ fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {
     return match res {
         Ok(x) => Some(x),
         Err(e) => {
+            println!("Error retrieving {}: {}", the_type, e);
             log::error!("Error retrieving {}: {}", the_type, e);
             None
         }
     };
 }
 
-pub async fn fetch_and_initialize_endpoints(client: &Client, context: crate::AppContext) -> FplEndpoints {
+pub async fn fetch_and_initialize_endpoints(
+    client: &Client,
+    context: crate::AppContext,
+) -> FplEndpoints {
     let mut last_fetch: Option<time::Instant> = None;
     let endpoints = fetch_new_endpoints(&client, context, &mut last_fetch).await;
     let endpoints = FplEndpoints::initialize_from_update(endpoints);
     endpoints
 }
 
-pub async fn fetch_new_endpoints(client: &Client, context: crate::AppContext, static_info_last_fetch: &mut Option<time::Instant>) -> FplEndpointsUpdate {
+pub async fn fetch_new_endpoints(
+    client: &Client,
+    context: crate::AppContext,
+    static_info_last_fetch: &mut Option<time::Instant>,
+) -> FplEndpointsUpdate {
     let mut gw = 1;
     let league_code = context.league_id;
     let teams = context.team_ids;
@@ -70,17 +82,14 @@ pub async fn fetch_new_endpoints(client: &Client, context: crate::AppContext, st
     let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
     let (game, details): (Option<Game>, Option<Details>) = join!(game, details);
 
-    game.as_ref().map(|game|
-        match game.current_event {
-            Some(current_gw) => {
-                gw = current_gw;
-            }
-            None => {
-                log::error!("Did not find new GW in fetch, using GW: {}", gw);
-            }
+    game.as_ref().map(|game| match game.current_event {
+        Some(current_gw) => {
+            gw = current_gw;
         }
-    );
-
+        None => {
+            log::error!("Did not find new GW in fetch, using GW: {}", gw);
+        }
+    });
 
     // Start http_calls
     let live = client.get_gw_points_live(&gw);
@@ -89,10 +98,9 @@ pub async fn fetch_new_endpoints(client: &Client, context: crate::AppContext, st
 
     // Handle static because we don't need to update the endpoint too often
     let static_info = match static_info_last_fetch {
-        Some(i) if i.elapsed() < Duration::from_millis(context.static_info_fetch_freq_ms) => {
-            None
-        }
+        Some(i) if i.elapsed() < Duration::from_millis(context.static_info_fetch_freq_ms) => None,
         _ => {
+            println!("Fetching static info");
             log::info!("Fetching new static info");
             *static_info_last_fetch = Some(time::Instant::now());
             handle_error_into_option(client.get_static().await)
@@ -125,7 +133,11 @@ pub async fn fetch_new_endpoints(client: &Client, context: crate::AppContext, st
     }
 }
 
-async fn fetch_game_with_retries(client: &Client, mut retries: i32, retry_wait_ms: u64) -> Option<Game> {
+async fn fetch_game_with_retries(
+    client: &Client,
+    mut retries: i32,
+    retry_wait_ms: u64,
+) -> Option<Game> {
     let mut err: Option<ClientError> = None;
     while retries > 0 {
         let details = client.get_game().await;
@@ -146,7 +158,12 @@ async fn fetch_game_with_retries(client: &Client, mut retries: i32, retry_wait_m
     return None;
 }
 
-async fn fetch_details_with_retries(client: &Client, mut retries: i32, league_code: &u32, retry_wait_ms: u64) -> Option<Details> {
+async fn fetch_details_with_retries(
+    client: &Client,
+    mut retries: i32,
+    league_code: &u32,
+    retry_wait_ms: u64,
+) -> Option<Details> {
     let mut err: Option<ClientError> = None;
     while retries > 0 {
         let details = client.get_league_details(&league_code).await;
@@ -166,5 +183,3 @@ async fn fetch_details_with_retries(client: &Client, mut retries: i32, league_co
     }
     return None;
 }
-
-
