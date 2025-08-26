@@ -160,14 +160,14 @@ teamCard = {
   template: `
     <div class="team-card" >
       <div> 
-        <div style="font-size: 1.5rem; " class="row-container"> 
-          <div> {{ team.team_name }} </div>
-          <div style="font-size: 2rem; margin-left: auto; margin-top: auto; margin-bottom: auto"> {{ points }}  </div> 
+        <div style=" margin-top: auto; margin-bottom: auto" class="row-container"> 
+          <div style="font-size: 1.75rem;"> {{ team.team_name }} </div>
+          <div style="font-size: 2rem; margin-left: auto;"> {{ points }}  </div> 
         </div>
 
         <div class="row-container"> 
-          <div> GW: {{ getTeamAndPointsString(team) }} </div>
-          <div v-if="opponent" class="opponent"> 
+          <div style="font-size: 1.4rem;"> GW: {{ getTeamAndPointsString(team) }} </div>
+          <div style="font-size: 1.5rem;" v-if="opponent" class="opponent"> 
             {{ getTeamAndPointsString(opponent) }} - {{ opponent.team_name }}
           </div>
         </div>
@@ -190,11 +190,11 @@ teamCard = {
                 <div v-if="player.play_status.type == 'subbed_off'" class="row-container" style="margin: auto 0px;" > 
 
                   <div class="row-container" style="opacity: 0.8;">
-                    <img v-bind:title="player.team.name" style="width: 1.2rem ; height: 1.5rem;" v-bind:src="getShirtUrl(player)" /> 
-                    <div style="margin: auto 2px"> {{ player.display_name }} </div> 
+                    <img v-bind:title="player.team.name" style="width: 0.8rem ; height: 1rem;" v-bind:src="getShirtUrl(player)" /> 
+                    <div style="margin: auto 1px; font-size:0.8rem"> {{ player.display_name }} </div> 
                   </div>
 
-                  <div style="margin: auto 2px"> -> </div> 
+                  <div style="margin: auto 1px"> -> </div> 
 
                   <div class="row-container">
                     <img v-bind:title="getSubbedWith(player).team.name" style="width: 1.2rem ; height: 1.5rem;" v-bind:src="getShirtUrl(getSubbedWith(player))" />

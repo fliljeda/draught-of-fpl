@@ -66,8 +66,7 @@
 }
 
 #card-holder {
-  margin: calc((2vw + 2vh)/2) 12.5vw;
-  display: block;
+  margin: 1rem;
 }
 
 body {
@@ -83,10 +82,10 @@ body {
 }
 
 .team-card {
-  width: 60vw;
+  max-width: 700px;
   background-color: rgb(219, 210, 197);
-  margin: 1vh auto;
-  padding: calc(0.5vh + 0.5vw);
+  margin: 1rem auto;
+  padding: 0.5rem;
 }
 
 .center {
