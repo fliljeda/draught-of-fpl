@@ -7,7 +7,7 @@ use crate::propcomp;
 use crate::storage::table::H2HMatch as TableH2HMatch;
 use crate::storage::table::PlayStatus as PlayerPlayStatus;
 use crate::storage::table::Player as TablePlayer;
-use crate::storage::table::Position as PlayerPosition;
+use crate::storage::table::Position;
 use crate::storage::table::{Entry as TableEntry, H2HInfo, ProjectedPointsExplanation, Scoring};
 use crate::storage::{FplEndpoints, LeagueTable};
 
@@ -212,8 +212,7 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
         let full_name = propcomp::get_player_full_name(endpoints, player_id);
         let display_name = propcomp::get_player_display_name(endpoints, player_id);
         let team = propcomp::compute_player_team(endpoints, player_id);
-        let team_pos =
-            PlayerPosition::from_number(propcomp::get_player_position(endpoints, player_id));
+        let team_pos = Position::from_number(propcomp::get_player_position(endpoints, player_id));
         let points = propcomp::get_player_points(endpoints, player_id);
         let bps = propcomp::get_player_bps(endpoints, player_id);
         let projected_points = propcomp::get_player_projected_points(endpoints, player_id);
@@ -316,142 +315,160 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
 
     let mut subs: Vec<Substitution> = Vec::new();
 
+    // First pass: Set initial statuses
     for player in players.iter_mut() {
-        // Players on the field that we know has/will play this GW
         if player.on_field && (player.has_played || !player.fixtures_finished) {
             player.play_status = PlayerPlayStatus::Playing;
         }
-
-        // Players who are on the bench
         if !player.on_field {
             player.play_status = PlayerPlayStatus::Benched;
         }
     }
 
-    // Create substitute list by going for each player and see which player they can be substituted with.
-    for player in players.iter().filter(|p| p.on_field) {
-        // Player will be substituted off if we can find a substitute
-        if player.on_field && !player.has_played && player.fixtures_finished {
-            // Switch goalkeeper
-            if player.team_pos.number == 1 {
-                if let Some(other_gk) = players
-                    .iter()
-                    .find(|p| p.team_pos.number == 1 && p.id != player.id)
-                {
-                    if other_gk.has_played || other_gk.has_upcoming_fixtures {
-                        subs.push(Substitution {
-                            player_in: other_gk.id,
-                            player_out: player.id,
-                        })
-                    }
-                }
-                continue;
-            }
-
-            // Switch outfield player for a player on the bench according to the rules:
-            //   - Goalkeepers have already been handled earlier. The following logic makes that assumption.
-            //   - Number of players in the same position is smaller than a FPL configured value (3 defender, 2 midfield, 1 forward)
-            //     means substitution is guaranteed.
-            //   - If not enough players are on the field (including substitutions) we can sub in that bench player
-            for benched_player in players.iter().filter(|p| {
-                p.pick_number >= 12
-                    && !p.on_field
-                    && p.team_pos.number != 1
-                    && (p.has_played || !p.fixtures_finished)
-            }) {
-                // Skip this player if he is already part of a calculated substitution
-                if subs.iter().any(|sub| {
-                    sub.player_in == benched_player.id || sub.player_out == benched_player.id
-                }) {
-                    continue;
-                }
-
-                // Sub according to number of players in the same position
-                {
-                    // Players who are on the field according to FPL
-                    let on_field_players_same_pos = players
-                        .iter()
-                        .filter(|p| {
-                            p.team_pos.number == benched_player.team_pos.number
-                                && p.play_status == PlayerPlayStatus::Playing
-                        })
-                        .count();
-
-                    // Players who are yet to be subbed by FPL but have been subbed in by this function
-                    let subbed_in_players_same_pos = subs
-                        .iter()
-                        .filter(|s| {
-                            if let Some(p) = players.iter().find(|p| p.id == s.player_in) {
-                                return p.team_pos.number == benched_player.team_pos.number;
-                            }
-                            return false;
-                        })
-                        .count();
-
-                    let playing_players_same_pos =
-                        on_field_players_same_pos + subbed_in_players_same_pos;
-
-                    let min_playing_players_same_pos = match benched_player.team_pos.number {
-                        2 => 3, // defender
-                        3 => 2, // midfielder
-                        4 => 1, // forward
-                        _ => 0, // should not happen
-                    };
-
-                    if playing_players_same_pos < min_playing_players_same_pos {
-                        subs.push(Substitution {
-                            player_in: benched_player.id,
-                            player_out: player.id,
-                        });
-                        break;
-                    }
-                }
-
-                // Sub according to total number of playing players
-                {
-                    // Players who are on the field according to FPL
-                    let on_field_players_no_gk = players
-                        .iter()
-                        .filter(|p| {
-                            p.play_status == PlayerPlayStatus::Playing && p.team_pos.number != 1
-                        })
-                        .count();
-
-                    // Players who are yet to be subbed by FPL but have been subbed in by this function
-                    let subbed_in_players_no_gk = subs
-                        .iter()
-                        .filter(|sub| {
-                            players
-                                .iter()
-                                .find(|p| p.id == sub.player_in)
-                                .map_or(false, |p| p.team_pos.number != 1)
-                        })
-                        .count();
-
-                    let total_playing_players_no_gk =
-                        subbed_in_players_no_gk + on_field_players_no_gk;
-
-                    if total_playing_players_no_gk < 10 {
-                        subs.push(Substitution {
-                            player_in: benched_player.id,
-                            player_out: player.id,
-                        });
-                        break;
-                    }
+    // Handle goalkeeper substitutions first
+    for player in players
+        .iter()
+        .filter(|p| p.on_field && p.team_pos == Position::GK)
+    {
+        if !player.has_played && player.fixtures_finished {
+            if let Some(other_gk) = players
+                .iter()
+                .find(|p| p.team_pos == Position::GK && p.id != player.id)
+            {
+                if other_gk.has_played || other_gk.has_upcoming_fixtures {
+                    subs.push(Substitution {
+                        player_in: other_gk.id,
+                        player_out: player.id,
+                    });
                 }
             }
         }
     }
 
+    // First priority: Ensure minimum position requirements
+    let position_requirements = [(Position::DEF, 3), (Position::MID, 2), (Position::FWD, 1)]; // (position, min_required)
+
+    for (pos, min_required) in position_requirements.iter() {
+        // Check if we need more players in this position
+        let current_playing = players
+            .iter()
+            .filter(|p| {
+                p.team_pos == *pos
+                    && (p.play_status == PlayerPlayStatus::Playing
+                        || matches!(p.play_status, PlayerPlayStatus::SubbedIn { .. }))
+            })
+            .count();
+
+        if current_playing < *min_required {
+            // Find non-playing players in this position
+            let non_playing = players
+                .iter()
+                .filter(|p| {
+                    p.on_field && p.team_pos == *pos && !p.has_played && p.fixtures_finished
+                })
+                .collect::<Vec<_>>();
+
+            // Find available bench players in this position
+            let bench_players = players
+                .iter()
+                .filter(|p| {
+                    !p.on_field
+                        && p.team_pos == *pos
+                        && (p.has_played || !p.fixtures_finished)
+                        && !subs
+                            .iter()
+                            .any(|s| s.player_in == p.id || s.player_out == p.id)
+                })
+                .collect::<Vec<_>>();
+
+            // Make necessary substitutions
+            for (i, non_playing_player) in non_playing
+                .iter()
+                .take(*min_required - current_playing)
+                .enumerate()
+            {
+                if let Some(bench_player) = bench_players.get(i) {
+                    subs.push(Substitution {
+                        player_in: bench_player.id,
+                        player_out: non_playing_player.id,
+                    });
+                }
+            }
+        }
+    }
+
+    // Second priority: Fill remaining spots up to 11 players
+    // Only process this after minimum position requirements are met
+    let playing_outfield_count = players
+        .iter()
+        .filter(|p| {
+            p.team_pos != Position::GK
+                && (p.play_status == PlayerPlayStatus::Playing
+                    || matches!(p.play_status, PlayerPlayStatus::SubbedIn { .. }))
+        })
+        .count();
+
+    if playing_outfield_count < 10 {
+        // collect candidate IDs first so we don't borrow `subs` inside iterator closures
+        let benched_candidates: Vec<u32> = players
+            .iter()
+            .filter(|p| {
+                p.pick_number >= 12
+                    && !p.on_field
+                    && p.team_pos != Position::GK
+                    && (p.has_played || !p.fixtures_finished)
+                    && !subs
+                        .iter()
+                        .any(|s| s.player_in == p.id || s.player_out == p.id)
+            })
+            .map(|p| p.id)
+            .collect();
+
+        // collect non-playing on-field player IDs that could be subbed off
+        let mut available_non_playing_ids: Vec<u32> = players
+            .iter()
+            .filter(|p| {
+                p.on_field
+                    && !p.has_played
+                    && p.fixtures_finished
+                    && !subs.iter().any(|s| s.player_out == p.id)
+            })
+            .map(|p| p.id)
+            .collect();
+
+        for benched_id in benched_candidates {
+            // skip if this benched player is already involved in a planned sub
+            if subs
+                .iter()
+                .any(|s| s.player_in == benched_id || s.player_out == benched_id)
+            {
+                continue;
+            }
+
+            // find a non-playing player not already targeted by a sub
+            if let Some(idx) = available_non_playing_ids
+                .iter()
+                .position(|np_id| !subs.iter().any(|s| s.player_out == *np_id))
+            {
+                let non_playing_id = available_non_playing_ids.remove(idx);
+                subs.push(Substitution {
+                    player_in: benched_id,
+                    player_out: non_playing_id,
+                });
+            } else {
+                // no suitable non-playing player left
+                break;
+            }
+        }
+    }
+
+    // Apply all substitutions
     for sub in subs {
-        // Set player as subbed in
         if let Some(p) = players.iter_mut().find(|p| p.id == sub.player_in) {
             p.play_status = PlayerPlayStatus::SubbedIn {
                 subbed_with: sub.player_out,
             };
         }
-
-        // Set player as subbed out
         if let Some(p) = players.iter_mut().find(|p| p.id == sub.player_out) {
             p.play_status = PlayerPlayStatus::SubbedOff {
                 subbed_with: sub.player_in,
@@ -459,6 +476,7 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
         }
     }
 
+    // Set remaining unknown statuses
     for p in players
         .iter_mut()
         .filter(|p| p.play_status == PlayerPlayStatus::Unknown)

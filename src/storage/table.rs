@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,7 +16,7 @@ pub struct LeagueTable {
     pub scoring: Scoring,
 
     // Only present if league is H2H. A map between gameweek and a vector of unordered matches.
-    pub matches: Option<HashMap<u32,Vec<H2HMatch>>>,
+    pub matches: Option<HashMap<u32, Vec<H2HMatch>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -49,7 +49,7 @@ pub struct Entry {
     // Array containing detailed information of each player
     pub players: Vec<Player>,
 
-    // Struct containing H2H information   
+    // Struct containing H2H information
     pub h2h_info: Option<H2HInfo>,
 }
 
@@ -144,28 +144,23 @@ pub struct Team {
     pub gk_shirt_url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Position {
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum Position {
     // The number of this position as used by FPL (1 GK, 2 DEF, 3 MID, 4 FWD)
-    pub number: u32,
-
-    // The short name of the position (GK, DEF, MID, FWD)
-    pub name: String,
+    GK = 1,
+    DEF = 2,
+    MID = 3,
+    FWD = 4,
 }
 
 impl Position {
     pub fn from_number(number: u32) -> Position {
-        let name = match number {
-            1 => "GK",
-            2 => "DEF",
-            3 => "MID",
-            4 => "FWD",
-            _ => ""
-        };
-        let name = String::from(name);
-        Position {
-            number,
-            name,
+        match number {
+            1 => Self::GK,
+            2 => Self::DEF,
+            3 => Self::MID,
+            4 => Self::FWD,
+            _ => Self::GK,
         }
     }
 }
@@ -185,14 +180,14 @@ pub struct PointSource {
     // The fixture ID that this point comes from
     pub fixture: u32,
 
-    // The identifying string for this point source type (used by FPL to calculate points
+    // The identifying string for this point source type (used by FPL to calculate points)
     pub stat: String,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Scoring {
-    H2H, CLASSIC
+    H2H,
+    CLASSIC,
 }
 
 impl Scoring {
@@ -217,7 +212,7 @@ pub struct H2HMatch {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct H2HInfo {
     pub points: i32,
-    pub matches_drawn: u32, 
+    pub matches_drawn: u32,
     pub matches_lost: u32,
     pub matches_played: u32,
     pub matches_won: u32,
@@ -227,14 +222,14 @@ pub struct H2HInfo {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum InjuryStatus {
-    Available,      // "a" Green marked
-    Doubt,          // "d" Yellow marked 
-    Unavailable,    // "u" Red marked (will not show up in list of players on FPL site)
-    // I see no point currently to use these, but I will let them stay in case they mean something
-    // and will refer their FPL status to Unavailable
-    //Injured,        // "i" Red marked
-    //Suspended,      // "s" Red marked
-    //N,      // "n" Red marked (not available? what does n stand for?)
+    Available, // "a" Green marked
+    Doubt,     // "d" Yellow marked
+    Unavailable, // "u" Red marked (will not show up in list of players on FPL site)
+               // I see no point currently to use these, but I will let them stay in case they mean something
+               // and will refer their FPL status to Unavailable
+               //Injured,        // "i" Red marked
+               //Suspended,      // "s" Red marked
+               //N,      // "n" Red marked (not available? what does n stand for?)
 }
 
 impl InjuryStatus {
@@ -252,22 +247,21 @@ impl InjuryStatus {
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
 pub enum PlayStatus {
-
     // player is selected on the field and has either played or can't yet be benched.
     #[serde(rename = "playing")]
     Playing,
-    
+
     // player is selected on the bench and is NOT guaranteed to be subbed in.
     #[serde(rename = "benched")]
     Benched,
 
     // player is selected on the bench and is guaranteed to be subbed in.
     #[serde(rename = "subbed_in")]
-    SubbedIn{subbed_with: u32},
+    SubbedIn { subbed_with: u32 },
 
     // player is selected on the fiedl and is guaranteed to be subbed off.
     #[serde(rename = "subbed_off")]
-    SubbedOff{subbed_with: u32},
+    SubbedOff { subbed_with: u32 },
 
     // not yet able to project what the status is for the player.
     #[serde(rename = "none")]
