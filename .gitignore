@@ -4,4 +4,4 @@
 .idea/
 Config.toml
 Rocket.toml
-/db
+/db/api

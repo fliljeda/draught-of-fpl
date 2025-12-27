@@ -91,7 +91,7 @@ teamCard = {
   },
   methods: {
     getShirtUrl(player) {
-      if (player.team_pos.name == "GK") {
+      if (player.team_pos == "GK") {
         return player.team.gk_shirt_url;
       } else {
         return player.team.shirt_url;
