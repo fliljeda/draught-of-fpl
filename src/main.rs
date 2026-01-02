@@ -95,12 +95,10 @@ async fn main() {
         .layer(CorsLayer::permissive());
 
     let port = app_config.server_port.unwrap_or(8000);
+    let serve_addr = format!("0.0.0.0:{port}");
     // Run the server
-    let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}"))
-        .await
-        .unwrap();
-
-    tracing::info!("Server running on http://127.0.0.1:{port}");
+    tracing::info!("Server running on http://{serve_addr}");
+    let listener = tokio::net::TcpListener::bind(serve_addr).await.unwrap();
 
     axum::serve(listener, app).await.unwrap();
 }

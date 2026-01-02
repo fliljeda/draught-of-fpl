@@ -36,13 +36,13 @@ const app = Vue.createApp({
     }
 
     // Initial data fetch
-    httpGetAsync(dof_url, function (resp) {
+    httpGetAsync("/table", function (resp) {
       onResp(resp)
     });
 
     // Continuously fetch data in intervals
     setInterval(function (resp) {
-      httpGetAsync(dof_url, onResp);
+      httpGetAsync("/table", onResp);
     }, 30000);
   },
   data() {

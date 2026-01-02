@@ -34,7 +34,7 @@ pub async fn league_table_computer(
             }
         };
 
-        tracing::info!("Computing new league table");
+        tracing::debug!("Computing new league table");
         let new_table = compute_new_league_table(endpoints);
         match new_table {
             Some(new_table) => {

@@ -29,7 +29,7 @@ pub async fn endpoint_cache_fetcher(
             thread::sleep(fetch_sleep_duration);
         }
 
-        tracing::info!("Fetching new endpoints");
+        tracing::debug!("Fetching new endpoints");
         let new = fetch_new_endpoints(&client, app_context, &mut static_info_last_fetch).await;
         match endpoints_lock.write() {
             Ok(mut t) => {
