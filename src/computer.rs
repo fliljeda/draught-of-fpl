@@ -413,7 +413,7 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
         let benched_candidates: Vec<u32> = players
             .iter()
             .filter(|p| {
-                let not_already_subbed = !subs
+                let not_already_in_sub_list = !subs
                     .iter()
                     .any(|s| s.player_in == p.id || s.player_out == p.id);
                 let played_or_will_play = p.has_played || !p.fixtures_finished;
@@ -422,7 +422,7 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
                     && !p.on_field
                     && p.team_pos != Position::GK
                     && played_or_will_play
-                    && not_already_subbed
+                    && not_already_in_sub_list
             })
             .map(|p| p.id)
             .collect();
