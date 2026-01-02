@@ -123,6 +123,12 @@ pub struct Player {
     pub play_status: PlayStatus,
 }
 
+impl Player {
+    pub fn selected_on_bench(&self) -> bool {
+        self.pick_number >= 12
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Team {
     // The team ID. Identifies the team in the FPL Json structures
