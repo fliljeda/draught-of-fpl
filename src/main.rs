@@ -1,30 +1,32 @@
-#[macro_use]
-extern crate rocket;
-
-use std::io::Cursor;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
-use rocket::{State, Request, response, Response, response::Responder};
+use axum::{
+    extract::Path, extract::State, http::StatusCode, response::IntoResponse, routing::get, Router,
+};
+use tower_http::cors::CorsLayer;
 
 pub use initializer::AppContext;
 
 use crate::client::Client;
-use crate::storage::{
-    FplEndpoints,
-    LeagueTable,
-};
+use crate::storage::{FplEndpoints, LeagueTable};
 
 mod client;
-mod propcomp;
+mod computer;
 mod fetcher;
+mod initializer;
+mod propcomp;
 mod storage;
 mod structs;
-mod initializer;
-mod computer;
 
-#[launch]
-pub async fn rocket_main() -> _ {
+#[derive(Clone)]
+pub struct AppState {
+    endpoints: Arc<RwLock<FplEndpoints>>,
+    table: Arc<RwLock<LeagueTable>>,
+}
+
+#[tokio::main]
+async fn main() {
     let app_config = initializer::AppConfig::initialize();
 
     let client = match app_config.local_fetch {
@@ -36,7 +38,8 @@ pub async fn rocket_main() -> _ {
 
     let app_context = Arc::new(initializer::initialize_app_context(&client, league_id).await);
 
-    let endpoints = fetcher::fetch_and_initialize_endpoints(&client, app_context.deref().clone()).await;
+    let endpoints =
+        fetcher::fetch_and_initialize_endpoints(&client, app_context.deref().clone()).await;
 
     let initialize_table_endpoints = endpoints.clone();
     let table = computer::compute_new_league_table(initialize_table_endpoints)
@@ -49,55 +52,69 @@ pub async fn rocket_main() -> _ {
     let table = Arc::new(RwLock::new(table));
     let table_compute_clone = Arc::clone(&table);
 
-    std::thread::spawn(|| fetcher::endpoint_cache_fetcher(client, endpoints_fetch_clone, app_context));
-    std::thread::spawn(|| computer::league_table_computer(table_compute_clone, endpoints_compute_clone));
+    let state = AppState {
+        endpoints: Arc::clone(&endpoints),
+        table: Arc::clone(&table),
+    };
 
-    rocket::build()
-        .mount("/fpl", routes![get_player])
-        .mount("/", routes![get_table])
-        .manage(endpoints)
-        .manage(table)
+    std::thread::spawn(|| {
+        fetcher::endpoint_cache_fetcher(client, endpoints_fetch_clone, app_context)
+    });
+    std::thread::spawn(|| {
+        computer::league_table_computer(table_compute_clone, endpoints_compute_clone)
+    });
+
+    // Build the router with CORS middleware
+    let app = Router::new()
+        .route("/fpl/player/:id", get(get_player))
+        .route("/table", get(get_table))
+        .with_state(state)
+        .layer(CorsLayer::permissive());
+
+    // Run the server
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
+        .await
+        .unwrap();
+
+    println!("Server running on http://127.0.0.1:8000");
+
+    axum::serve(listener, app).await.unwrap();
 }
 
-
-#[get("/player/<id>")]
-fn get_player(id: u32, endpoints: &State<Arc<RwLock<FplEndpoints>>>) -> String {
-    return match endpoints.read() {
+async fn get_player(
+    State(state): State<AppState>,
+    Path(id): Path<u32>,
+) -> Result<String, (StatusCode, String)> {
+    match state.endpoints.read() {
         Ok(ep) => {
             let full_name = propcomp::get_player_full_name(&*ep, id);
-            format!("Player: {} with id {}\n", full_name, id)
+            Ok(format!("Player: {} with id {}\n", full_name, id))
         }
-        Err(_e) => {
-            format!("Error reading endpoints")
-        }
-    };
+        Err(_) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            String::from("Error reading endpoints"),
+        )),
+    }
 }
 
-#[get("/table")]
-fn get_table(table: &State<Arc<RwLock<LeagueTable>>>) -> StringResponse {
-    return match table.read() {
-        Ok(t) => {
-            let table_ser = serde_json::to_string(t.deref())
-                .expect("Could not serialize table");
-            StringResponse{content: table_ser}
-        }
-        Err(_e) => {
-            StringResponse{content: String::from("Error reading league table")}
-        }
-    };
-}
-
-struct StringResponse {
-    content: String,
-}
-
-#[rocket::async_trait]
-impl<'r> Responder<'r, 'static> for StringResponse {
-    fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
-        Response::build()
-            .header(rocket::http::ContentType::JSON)
-            .raw_header("Access-Control-Allow-Origin", "*")
-            .sized_body(self.content.len(), Cursor::new(self.content))
-            .ok()
+async fn get_table(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    match state.table.read() {
+        Ok(t) => match serde_json::to_string(t.deref()) {
+            Ok(json) => Ok((
+                StatusCode::OK,
+                [(axum::http::header::CONTENT_TYPE, "application/json")],
+                json,
+            )),
+            Err(_) => Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                String::from("Failed to serialize league table"),
+            )),
+        },
+        Err(_) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            String::from("Error reading league table"),
+        )),
     }
 }
