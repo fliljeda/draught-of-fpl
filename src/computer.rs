@@ -12,7 +12,7 @@ use crate::storage::table::{Entry as TableEntry, H2HInfo, ProjectedPointsExplana
 use crate::storage::{FplEndpoints, LeagueTable};
 
 #[allow(dead_code)]
-pub fn league_table_computer(
+pub async fn league_table_computer(
     lock: Arc<RwLock<LeagueTable>>,
     endpoints_lock: Arc<RwLock<FplEndpoints>>,
 ) {

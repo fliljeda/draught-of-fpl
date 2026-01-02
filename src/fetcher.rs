@@ -12,36 +12,33 @@ use crate::storage::FplEndpoints;
 use crate::structs::*;
 
 #[allow(dead_code)]
-pub fn endpoint_cache_fetcher(
+pub async fn endpoint_cache_fetcher(
     client: Client,
     endpoints_lock: Arc<RwLock<FplEndpoints>>,
     context: Arc<crate::AppContext>,
 ) {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async {
-        let mut static_info_last_fetch: Option<time::Instant> = None;
-        loop {
-            let app_context = context.deref().clone();
-            let fetch_sleep_ms = app_context.fetch_sleep_ms;
+    let mut static_info_last_fetch: Option<time::Instant> = None;
+    loop {
+        let app_context = context.deref().clone();
+        let fetch_sleep_ms = app_context.fetch_sleep_ms;
 
-            {
-                log::trace!("Sleeping fetcher thread for {} ms", fetch_sleep_ms);
-                thread::sleep(time::Duration::from_millis(fetch_sleep_ms));
-            }
-
-            log::info!("Fetching new endpoints");
-            let new = fetch_new_endpoints(&client, app_context, &mut static_info_last_fetch).await;
-            match endpoints_lock.write() {
-                Ok(mut t) => {
-                    log::trace!("Grabbed the lock");
-                    t.update(new);
-                }
-                Err(e) => {
-                    log::error!("Could not grab write lock for endpoints: {}", e);
-                }
-            };
+        {
+            log::trace!("Sleeping fetcher thread for {} ms", fetch_sleep_ms);
+            thread::sleep(time::Duration::from_millis(fetch_sleep_ms));
         }
-    });
+
+        log::info!("Fetching new endpoints");
+        let new = fetch_new_endpoints(&client, app_context, &mut static_info_last_fetch).await;
+        match endpoints_lock.write() {
+            Ok(mut t) => {
+                log::trace!("Grabbed the lock");
+                t.update(new);
+            }
+            Err(e) => {
+                log::error!("Could not grab write lock for endpoints: {}", e);
+            }
+        };
+    }
 }
 
 fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {

@@ -4,6 +4,7 @@ use std::sync::{Arc, RwLock};
 use axum::{
     extract::Path, extract::State, http::StatusCode, response::IntoResponse, routing::get, Router,
 };
+use clap::Parser;
 use tower_http::cors::CorsLayer;
 
 pub use initializer::AppContext;
@@ -19,6 +20,15 @@ mod propcomp;
 mod storage;
 mod structs;
 
+#[derive(Parser)]
+#[command(name = "Draught of FPL")]
+#[command(about = "Fantasy Premier League Draft League Proxy Server", long_about = None)]
+struct Cli {
+    /// Path to configuration file (TOML format). If not provided, uses environment variables.
+    #[arg(short = 'f', long)]
+    config_source: Option<String>,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     endpoints: Arc<RwLock<FplEndpoints>>,
@@ -27,7 +37,8 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
-    let app_config = initializer::AppConfig::initialize();
+    let cli = Cli::parse();
+    let app_config = initializer::AppConfig::initialize(cli.config_source);
 
     let client = match app_config.local_fetch {
         Some(true) => Client::new_local(app_config.local_url.clone()).unwrap(),
@@ -57,12 +68,15 @@ async fn main() {
         table: Arc::clone(&table),
     };
 
-    std::thread::spawn(|| {
-        fetcher::endpoint_cache_fetcher(client, endpoints_fetch_clone, app_context)
-    });
-    std::thread::spawn(|| {
-        computer::league_table_computer(table_compute_clone, endpoints_compute_clone)
-    });
+    tokio::spawn(fetcher::endpoint_cache_fetcher(
+        client,
+        endpoints_fetch_clone,
+        app_context,
+    ));
+    tokio::spawn(computer::league_table_computer(
+        table_compute_clone,
+        endpoints_compute_clone,
+    ));
 
     // Build the router with CORS middleware
     let app = Router::new()
