@@ -4,7 +4,6 @@ use std::sync::{Arc, RwLock};
 use std::{thread, time};
 
 use futures::join;
-use tokio::time::Duration;
 
 use crate::client::{Client, ClientError};
 use crate::storage::endpoints::FplEndpointsUpdate;
@@ -20,22 +19,25 @@ pub async fn endpoint_cache_fetcher(
     let mut static_info_last_fetch: Option<time::Instant> = None;
     loop {
         let app_context = context.deref().clone();
-        let fetch_sleep_ms = app_context.fetch_sleep_ms;
+        let fetch_sleep_duration = app_context.fetch_sleep_duration;
 
         {
-            log::trace!("Sleeping fetcher thread for {} ms", fetch_sleep_ms);
-            thread::sleep(time::Duration::from_millis(fetch_sleep_ms));
+            tracing::trace!(
+                "Sleeping fetcher thread for {} ms",
+                fetch_sleep_duration.as_millis()
+            );
+            thread::sleep(fetch_sleep_duration);
         }
 
-        log::info!("Fetching new endpoints");
+        tracing::info!("Fetching new endpoints");
         let new = fetch_new_endpoints(&client, app_context, &mut static_info_last_fetch).await;
         match endpoints_lock.write() {
             Ok(mut t) => {
-                log::trace!("Grabbed the lock");
+                tracing::trace!("Grabbed the lock");
                 t.update(new);
             }
             Err(e) => {
-                log::error!("Could not grab write lock for endpoints: {}", e);
+                tracing::error!("Could not grab write lock for endpoints: {}", e);
             }
         };
     }
@@ -46,8 +48,7 @@ fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {
     return match res {
         Ok(x) => Some(x),
         Err(e) => {
-            println!("Error retrieving {}: {}", the_type, e);
-            log::error!("Error retrieving {}: {}", the_type, e);
+            tracing::error!("Error retrieving {}: {}", the_type, e);
             None
         }
     };
@@ -84,7 +85,7 @@ pub async fn fetch_new_endpoints(
             gw = current_gw;
         }
         None => {
-            log::error!("Did not find new GW in fetch, using GW: {}", gw);
+            tracing::error!("Did not find new GW in fetch, using GW: {}", gw);
         }
     });
 
@@ -95,10 +96,9 @@ pub async fn fetch_new_endpoints(
 
     // Handle static because we don't need to update the endpoint too often
     let static_info = match static_info_last_fetch {
-        Some(i) if i.elapsed() < Duration::from_millis(context.static_info_fetch_freq_ms) => None,
+        Some(i) if i.elapsed() < context.static_info_fetch_freq => None,
         _ => {
-            println!("Fetching static info");
-            log::info!("Fetching new static info");
+            tracing::debug!("Fetching static info");
             *static_info_last_fetch = Some(time::Instant::now());
             handle_error_into_option(client.get_static().await)
         }
@@ -150,7 +150,7 @@ async fn fetch_game_with_retries(
         thread::sleep(time::Duration::from_millis(retry_wait_ms));
     }
     if let Some(e) = err {
-        log::error!("Error fetching Game. \nGame: {}", e);
+        tracing::error!("Error fetching Game. \nGame: {}", e);
     }
     return None;
 }
@@ -176,7 +176,7 @@ async fn fetch_details_with_retries(
         thread::sleep(time::Duration::from_millis(retry_wait_ms));
     }
     if let Some(e) = err {
-        log::error!("Error fetching Details. \nDetails: {}", e);
+        tracing::error!("Error fetching Details. \nDetails: {}", e);
     }
     return None;
 }

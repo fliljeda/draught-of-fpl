@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::time::Duration;
 
 use serde::Deserialize;
 
@@ -9,8 +10,8 @@ use crate::client::Client;
 pub struct AppContext {
     pub league_id: u32,
     pub team_ids: Vec<u32>,
-    pub fetch_sleep_ms: u64,
-    pub static_info_fetch_freq_ms: u64,
+    pub fetch_sleep_duration: Duration,
+    pub static_info_fetch_freq: Duration,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -18,15 +19,19 @@ pub struct AppConfig {
     pub league_id: u32,
     pub local_fetch: Option<bool>,
     pub local_url: Option<String>,
+    pub server_port: Option<u16>,
+    pub asset_path: Option<String>,
 }
 
 impl AppConfig {
     /// Initialize AppConfig from file if provided, otherwise fall back to environment variables
     pub fn initialize(config_file_path: Option<String>) -> AppConfig {
-        match config_file_path {
+        let config = match config_file_path {
             Some(path) => Self::initialize_from_file(path),
             None => Self::initialize_from_env(),
-        }
+        };
+        tracing::info!("Config used: {:?}", config);
+        config
     }
 
     fn initialize_from_file(config_file_path: String) -> AppConfig {
@@ -58,10 +63,22 @@ impl AppConfig {
             Err(_) => None,
         };
 
+        let asset_path = match env::var("DOF_ASSET_PATH") {
+            Ok(val) => Some(val),
+            Err(_) => None,
+        };
+
+        let server_port = match env::var("DOF_SERVER_PORT") {
+            Ok(val) => Some(val.parse().expect("DOF_SERVER_PORT must be a valid u16")),
+            Err(_) => None,
+        };
+
         AppConfig {
             league_id,
             local_fetch,
             local_url,
+            server_port,
+            asset_path,
         }
     }
 }
@@ -77,14 +94,14 @@ pub async fn initialize_app_context(client: &Client, league_id: u32) -> AppConte
 
     let team_ids = details.league_entries.iter().map(|x| x.entry_id).collect();
 
-    let fetch_sleep_ms = 60_000 as u64;
+    let fetch_sleep_duration = Duration::from_millis(60_000);
 
-    let static_info_fetch_freq_ms = 1_800_000 as u64;
+    let static_info_fetch_freq = Duration::from_millis(1_800_000);
 
     AppContext {
         league_id,
         team_ids,
-        fetch_sleep_ms,
-        static_info_fetch_freq_ms,
+        fetch_sleep_duration,
+        static_info_fetch_freq,
     }
 }

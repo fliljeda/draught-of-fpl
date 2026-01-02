@@ -1,13 +1,12 @@
+use crate::structs::{Details, Game, Live, StaticInfo, TeamGw, TeamInfo};
+use futures::future::join_all;
 use reqwest::Client as ReqwestClient;
+use serde::de;
+use std::collections::HashMap;
 use std::error;
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
-use crate::structs::{Game, Details, Live, TeamGw, TeamInfo, StaticInfo};
-use serde::de;
-use std::collections::HashMap;
-use futures::future::join_all;
-
 
 pub const FPL_API_BASE: &str = "https://draft.premierleague.com/api";
 pub const DEFAULT_LOCAL_API_BASE: &str = "/fpl/api";
@@ -48,19 +47,20 @@ pub struct Client {
     local_url: Option<String>,
 }
 
-fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError> where T: de::Deserialize<'a> {
+fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError>
+where
+    T: de::Deserialize<'a>,
+{
     serde_json::from_str(&s).or_else(|e| {
         return Err(ClientError::ReqwestError(String::from(format!(
             "Found Error: {}",
             e
-        ))))
+        ))));
     })
 }
 
-
 // Basic client methods
 impl Client {
-
     /* Creates and returns a new fpl client */
     pub fn new() -> Result<Client, ClientError> {
         let client_builder = ReqwestClient::builder().timeout(std::time::Duration::from_secs(10));
@@ -69,7 +69,7 @@ impl Client {
             Ok(c) => c,
             Err(e) => {
                 return Err(ClientError::ReqwestError(
-                    format!("Could not create client with reason: {}", e).to_string()
+                    format!("Could not create client with reason: {}", e).to_string(),
                 ))
             }
         };
@@ -143,8 +143,8 @@ impl Client {
     }
 
     async fn fetch_web(&self, path: &str) -> Result<String, ClientError> {
-        log::trace!("Fetching {}", path);
-        let resp =  match self.http_client.get(path).send().await {
+        tracing::trace!("Fetching {}", path);
+        let resp = match self.http_client.get(path).send().await {
             Ok(r) => r,
             Err(e) => {
                 return Err(ClientError::ReqwestError(String::from(format!(
@@ -166,7 +166,6 @@ impl Client {
 
         Ok(body)
     }
-
 }
 
 // High level FPL fetch methods
@@ -210,10 +209,15 @@ impl Client {
     }
 
     #[allow(dead_code)]
-    pub async fn get_multiple_teams_gw(&self, teams: &Vec<u32>, gw: &u32) -> HashMap<u32, Result<TeamGw, ClientError>> {
-        let futures= teams.iter().map(|team_id| {
-            self.get_team_gw(&team_id, &gw)
-        }).collect::<Vec<_>>();
+    pub async fn get_multiple_teams_gw(
+        &self,
+        teams: &Vec<u32>,
+        gw: &u32,
+    ) -> HashMap<u32, Result<TeamGw, ClientError>> {
+        let futures = teams
+            .iter()
+            .map(|team_id| self.get_team_gw(&team_id, &gw))
+            .collect::<Vec<_>>();
 
         let team_gws: Vec<Result<TeamGw, ClientError>> = join_all(futures).await;
 
@@ -240,19 +244,26 @@ impl Client {
     }
 
     #[allow(dead_code)]
-    pub async fn get_multiple_teams_info(&self, teams: &Vec<u32>) -> HashMap<u32, Result<TeamInfo, ClientError>> {
-        let futures= teams.iter().map(|team_id| {
-            self.get_team_info(&team_id)
-        }).collect::<Vec<_>>();
+    pub async fn get_multiple_teams_info(
+        &self,
+        teams: &Vec<u32>,
+    ) -> HashMap<u32, Result<TeamInfo, ClientError>> {
+        let futures = teams
+            .iter()
+            .map(|team_id| self.get_team_info(&team_id))
+            .collect::<Vec<_>>();
 
         let team_infos: Vec<Result<TeamInfo, ClientError>> = join_all(futures).await;
 
         let mut m: HashMap<u32, Result<TeamInfo, ClientError>> = HashMap::new();
 
         // Assumes same ordering of teams and team_gws which futures::join_all guarantees
-        team_infos.into_iter().enumerate().for_each(|(i, team_info)| {
-            m.insert(teams[i], team_info);
-        });
+        team_infos
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, team_info)| {
+                m.insert(teams[i], team_info);
+            });
         m
     }
 
@@ -300,21 +311,21 @@ mod tests {
     use futures::join;
 
     #[tokio::test]
-    async fn local_test_client() -> Result<(), ClientError>{
+    async fn local_test_client() -> Result<(), ClientError> {
         let client = Client::new_local(None).unwrap();
 
         assert_eq!(client.local, true);
         assert_eq!(client.get_base_url(), DEFAULT_LOCAL_API_BASE);
 
         let league_code: u32 = 305;
-        let gw: u32 =  1;
+        let gw: u32 = 1;
         let team: u32 = 856;
 
         let game = client.get_game();
         let league_details = client.get_league_details(&league_code);
         let team_info = client.get_team_info(&team);
-        let team_gw= client.get_team_gw(&team, &gw);
-        let live= client.get_gw_points_live(&gw);
+        let team_gw = client.get_team_gw(&team, &gw);
+        let live = client.get_gw_points_live(&gw);
         let static_info = client.get_static();
 
         type EndpointsJoin = (
@@ -326,7 +337,8 @@ mod tests {
             Result<StaticInfo, ClientError>,
         );
 
-        let results: EndpointsJoin = join!(game, league_details, team_info, team_gw, live, static_info);
+        let results: EndpointsJoin =
+            join!(game, league_details, team_info, team_gw, live, static_info);
 
         results.0?;
         results.1?;
@@ -340,7 +352,7 @@ mod tests {
 
     #[tokio::test]
     #[ignore] //Expensive
-    async fn web_test_client() -> Result<(), ClientError>{
+    async fn web_test_client() -> Result<(), ClientError> {
         let client = Client::new().unwrap();
         assert_eq!(client.local, false);
         assert_eq!(client.get_base_url(), FPL_API_BASE);
@@ -348,14 +360,14 @@ mod tests {
         let game = client.get_game();
         let game2 = client.get_game();
 
-        let (game,game2): (Result<Game, ClientError>,Result<Game, ClientError>) = join!(game, game2);
+        let (game, game2): (Result<Game, ClientError>, Result<Game, ClientError>) =
+            join!(game, game2);
 
         game?;
         game2?;
 
         Ok(())
     }
-
 
     #[tokio::test]
     async fn local_endpoint_test_game() -> Result<(), ClientError> {
@@ -380,7 +392,7 @@ mod tests {
     async fn local_endpoint_test_live() -> Result<(), ClientError> {
         let client = Client::new_local(None).unwrap();
 
-        let gw: u32 =  1;
+        let gw: u32 = 1;
         client.get_gw_points_live(&gw).await?;
 
         Ok(())
@@ -390,7 +402,7 @@ mod tests {
     async fn local_endpoint_test_team_gw() -> Result<(), ClientError> {
         let client = Client::new_local(None).unwrap();
 
-        let gw: u32 =  1;
+        let gw: u32 = 1;
         let team: u32 = 856;
         client.get_team_gw(&team, &gw).await?;
 
@@ -416,7 +428,6 @@ mod tests {
         Ok(())
     }
 
-
     #[tokio::test]
     async fn local_test_multiple_team_gw() -> Result<(), ClientError> {
         let client = Client::new_local(None).unwrap();
@@ -424,20 +435,22 @@ mod tests {
         let gw = game.current_event.unwrap_or(1);
 
         let details = client.get_league_details(&305).await?;
-        let teams: Vec<u32> = details.league_entries.iter()
+        let teams: Vec<u32> = details
+            .league_entries
+            .iter()
             .map(|entry| entry.entry_id)
             .collect();
 
         let team_gws = client.get_multiple_teams_gw(&teams, &gw).await;
 
         for x in team_gws.into_iter() {
-           match x {
-               (u, Err(e)) => {
-                    eprintln!("Team error {} returned with error", u);
+            match x {
+                (u, Err(e)) => {
+                    tracing::error!("Team error {} returned with error", u);
                     return Err(e);
-               },
-               _ => ()
-           }
+                }
+                _ => (),
+            }
         }
 
         Ok(())
@@ -449,7 +462,9 @@ mod tests {
         let _game = client.get_game().await?;
 
         let details = client.get_league_details(&305).await?;
-        let teams: Vec<u32> = details.league_entries.iter()
+        let teams: Vec<u32> = details
+            .league_entries
+            .iter()
             .map(|entry| entry.entry_id)
             .collect();
 
@@ -458,14 +473,13 @@ mod tests {
         for x in team_gws.into_iter() {
             match x {
                 (u, Err(e)) => {
-                    eprintln!("Team error {} returned with error", u);
+                    tracing::error!("Team error {} returned with error", u);
                     return Err(e);
-                },
-                _ => ()
+                }
+                _ => (),
             }
         }
 
         Ok(())
     }
-
 }

@@ -11,6 +11,7 @@ pub use initializer::AppContext;
 
 use crate::client::Client;
 use crate::storage::{FplEndpoints, LeagueTable};
+use tracing_subscriber;
 
 mod client;
 mod computer;
@@ -37,6 +38,7 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let cli = Cli::parse();
     let app_config = initializer::AppConfig::initialize(cli.config_source);
 
@@ -78,19 +80,27 @@ async fn main() {
         endpoints_compute_clone,
     ));
 
+    let frontend = tower_http::services::ServeDir::new(
+        app_config
+            .asset_path
+            .clone()
+            .unwrap_or_else(|| "./www/vue".into()),
+    );
     // Build the router with CORS middleware
     let app = Router::new()
         .route("/fpl/player/:id", get(get_player))
         .route("/table", get(get_table))
+        .nest_service("/", frontend)
         .with_state(state)
         .layer(CorsLayer::permissive());
 
+    let port = app_config.server_port.unwrap_or(8000);
     // Run the server
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
+    let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}"))
         .await
         .unwrap();
 
-    println!("Server running on http://127.0.0.1:8000");
+    tracing::info!("Server running on http://127.0.0.1:{port}");
 
     axum::serve(listener, app).await.unwrap();
 }

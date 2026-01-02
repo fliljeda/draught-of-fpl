@@ -1,37 +1,23 @@
 // Computes the basic properties from endpoint objects
 // Some functions expect the callers to ensure the input is valid.
 //
-// Sometimes team_id and entry_id are used as an ID for a FPL league team. 
+// Sometimes team_id and entry_id are used as an ID for a FPL league team.
 // There are two different IDs for each league team and it is not exactly
 // understood what the difference is, but they both are used for different
 // parts of the FPL api.
 use crate::storage::{
-    table::{
-        PointSource as TablePointSource,
-        Team as TableTeam,
-        Scoring, InjuryStatus
-    },
-    FplEndpoints
+    table::{InjuryStatus, PointSource as TablePointSource, Scoring, Team as TableTeam},
+    FplEndpoints,
 };
 use crate::structs::{
     live::{
-        Fixture as LiveFixture,
-        FixtureStat,
-        Point as LivePoint,
+        Element as LiveElement, Fixture as LiveFixture, FixtureStat, Point as LivePoint,
         PointsOrFixture,
-        Element as LiveElement,
         PointsOrFixture::{Fixture, Points},
     },
-    teamgw::{
-        Pick as TeamGwPick,
-        TeamGw,
-    },
-    staticinfo::{
-        Element as StaticElement,
-    },
-    teaminfo::{
-        Entry as TeamInfoEntry
-    }
+    staticinfo::Element as StaticElement,
+    teamgw::{Pick as TeamGwPick, TeamGw},
+    teaminfo::Entry as TeamInfoEntry,
 };
 
 // Gets the display name for a FPL player
@@ -53,7 +39,9 @@ pub fn get_player_position(endpoints: &FplEndpoints, player_id: u32) -> u32 {
 }
 
 pub fn get_player_points(endpoints: &FplEndpoints, player_id: u32) -> i32 {
-    get_player_from_live(endpoints, player_id).stats.total_points
+    get_player_from_live(endpoints, player_id)
+        .stats
+        .total_points
 }
 
 pub fn get_player_bps(endpoints: &FplEndpoints, player_id: u32) -> i32 {
@@ -69,7 +57,7 @@ pub fn get_player_news(endpoints: &FplEndpoints, player_id: u32) -> Option<Strin
     let news_opt = &get_player_from_static(endpoints, player_id).news;
     match news_opt {
         None => None,
-        Some(x) if x.is_empty()  => None,
+        Some(x) if x.is_empty() => None,
         Some(x) => Some(x.clone()),
     }
 }
@@ -77,8 +65,16 @@ pub fn get_player_news(endpoints: &FplEndpoints, player_id: u32) -> Option<Strin
 // "is on field" happens if the player was selected to play on field or is a part of the substitutes
 pub fn compute_player_is_on_field(pick: &TeamGwPick, team_gw: &TeamGw) -> bool {
     let selected_on_field = pick.position <= 11;
-    let substituted_in = team_gw.subs.iter().find(|x| x.element_in == pick.element).is_some();
-    let substituted_out = team_gw.subs.iter().find(|x| x.element_out == pick.element).is_some();
+    let substituted_in = team_gw
+        .subs
+        .iter()
+        .find(|x| x.element_in == pick.element)
+        .is_some();
+    let substituted_out = team_gw
+        .subs
+        .iter()
+        .find(|x| x.element_out == pick.element)
+        .is_some();
 
     (selected_on_field && !substituted_out) || substituted_in
 }
@@ -100,18 +96,30 @@ pub fn compute_player_has_upcoming_fixtures(endpoints: &FplEndpoints, player_id:
 
 pub fn compute_player_team(endpoints: &FplEndpoints, player_id: u32) -> TableTeam {
     let team_id = get_player_team_id(endpoints, player_id);
-    let team = endpoints.static_info.teams.iter().find(|team| team_id == team.id)
-        .expect(&format!("Can't find team with ID: {} for player with id {}", team_id, player_id));
-    TableTeam{
+    let team = endpoints
+        .static_info
+        .teams
+        .iter()
+        .find(|team| team_id == team.id)
+        .expect(&format!(
+            "Can't find team with ID: {} for player with id {}",
+            team_id, player_id
+        ));
+    TableTeam {
         id: team.id as u32,
         name: String::from(&team.name),
         short_name: String::from(&team.short_name),
         code: team.code as u32,
-        shirt_url: format!("https://draft.premierleague.com/img/shirts/standard/shirt_{}-36.png", team.code),
-        gk_shirt_url: format!("https://draft.premierleague.com/img/shirts/standard/shirt_{}_1-36.png", team.code),
+        shirt_url: format!(
+            "https://draft.premierleague.com/img/shirts/standard/shirt_{}-36.png",
+            team.code
+        ),
+        gk_shirt_url: format!(
+            "https://draft.premierleague.com/img/shirts/standard/shirt_{}_1-36.png",
+            team.code
+        ),
     }
 }
-
 
 // Projected points calculates the sum of the points from all point sources and if calculates how
 // many bonus points the BPS would give the player. Does not calculate bonus points if bonus has
@@ -162,18 +170,25 @@ pub fn get_player_point_sources(endpoints: &FplEndpoints, player_id: u32) -> Vec
 }
 
 // The body of this function may look stupid. But the data structure chosen by the FPL team is stupid
-fn calculate_point_sources(fixtures: &Vec<Vec<PointsOrFixture>>, fixture_id: u32) -> Vec<LivePoint> {
-    let fixture = fixtures.iter().find(|x| {
-        x.iter().any(|y| {
-            return if let Fixture(n) = y {
-                *n == fixture_id
-            } else {
-                false
-            };
+fn calculate_point_sources(
+    fixtures: &Vec<Vec<PointsOrFixture>>,
+    fixture_id: u32,
+) -> Vec<LivePoint> {
+    let fixture = fixtures
+        .iter()
+        .find(|x| {
+            x.iter().any(|y| {
+                return if let Fixture(n) = y {
+                    *n == fixture_id
+                } else {
+                    false
+                };
+            })
         })
-    }).expect(
-        &format!("Could not find fixture {} when computing point sources (parsing explain object)", fixture_id)
-    );
+        .expect(&format!(
+            "Could not find fixture {} when computing point sources (parsing explain object)",
+            fixture_id
+        ));
 
     let mut point_sources = Vec::new();
     for pof in fixture {
@@ -263,7 +278,10 @@ pub fn get_team_name(endpoints: &FplEndpoints, team_id: u32) -> String {
     let placeholder = String::from("<Team Name Unknown>");
     match get_team_info_entry(endpoints, team_id) {
         None => {
-            log::warn!("Calculating team name: Did not find team with id {} in endpoints", team_id);
+            tracing::warn!(
+                "Calculating team name: Did not find team with id {} in endpoints",
+                team_id
+            );
             placeholder
         }
         Some(entry) => {
@@ -276,7 +294,10 @@ pub fn get_team_owner_name(endpoints: &FplEndpoints, team_id: u32) -> String {
     let placeholder = String::from("<Team Owner Unknown>");
     match get_team_info_entry(endpoints, team_id) {
         None => {
-            log::warn!("Calculating team owner name: Did not find team with id {} in endpoints", team_id);
+            tracing::warn!(
+                "Calculating team owner name: Did not find team with id {} in endpoints",
+                team_id
+            );
             placeholder
         }
         Some(entry) => {
@@ -287,14 +308,25 @@ pub fn get_team_owner_name(endpoints: &FplEndpoints, team_id: u32) -> String {
 
 // Returns 0 if ID does not exist or if not H2H league.
 pub fn get_current_h2h_opponent(endpoints: &FplEndpoints, team_id: u32) -> u32 {
-    let current_gw = endpoints.game.current_event.expect("Current event (gw) not present in endpoints when computing properties");
+    let current_gw = endpoints
+        .game
+        .current_event
+        .expect("Current event (gw) not present in endpoints when computing properties");
 
     // The h2hmatch structure uses entry_id as the team identifier
     let team_id = get_team_id_from_entry_id(endpoints, team_id);
     if let Some(league_matches) = &endpoints.details.matches {
-        let h2h_match_opt = league_matches.iter().find(|league_match| league_match.event == current_gw && (league_match.league_entry_1 == team_id || league_match.league_entry_2 == team_id));
+        let h2h_match_opt = league_matches.iter().find(|league_match| {
+            league_match.event == current_gw
+                && (league_match.league_entry_1 == team_id
+                    || league_match.league_entry_2 == team_id)
+        });
         if let Some(h2h_match) = h2h_match_opt {
-            let opponent = if h2h_match.league_entry_1 == team_id { h2h_match.league_entry_2 } else { h2h_match.league_entry_1 };
+            let opponent = if h2h_match.league_entry_1 == team_id {
+                h2h_match.league_entry_2
+            } else {
+                h2h_match.league_entry_1
+            };
             return get_entry_id_from_team_id(endpoints, opponent);
         }
     }
@@ -303,35 +335,46 @@ pub fn get_current_h2h_opponent(endpoints: &FplEndpoints, team_id: u32) -> u32 {
 
 // Returns 0 if ID does not exist.
 pub fn get_team_id_from_entry_id(endpoints: &FplEndpoints, entry_id: u32) -> u32 {
-    endpoints.details.league_entries.iter()
+    endpoints
+        .details
+        .league_entries
+        .iter()
         .find(|entry| entry.entry_id == entry_id)
         .map(|entry| entry.id)
         .unwrap_or(0)
-} 
+}
 
 // Returns 0 if ID does not exist.
 pub fn get_entry_id_from_team_id(endpoints: &FplEndpoints, team_id: u32) -> u32 {
-    endpoints.details.league_entries.iter()
+    endpoints
+        .details
+        .league_entries
+        .iter()
         .find(|entry| entry.id == team_id)
         .map(|entry| entry.entry_id)
         .unwrap_or(0)
-} 
+}
 
 fn get_player_from_static(endpoints: &FplEndpoints, player_id: u32) -> &StaticElement {
     let i = (player_id - 1) as usize;
-    endpoints.static_info.elements.get(i).expect(
-        format!("Player Id {} does not exist in bootstrap-static", player_id).as_str()
-    )
+    endpoints
+        .static_info
+        .elements
+        .get(i)
+        .expect(format!("Player Id {} does not exist in bootstrap-static", player_id).as_str())
 }
 
 fn get_player_from_live(endpoints: &FplEndpoints, player_id: u32) -> &LiveElement {
-    endpoints.live.elements.get(player_id.to_string().as_str()).expect(
-        format!("Player Id {} does not exist in live endpoint", player_id).as_str()
-    )
+    endpoints
+        .live
+        .elements
+        .get(player_id.to_string().as_str())
+        .expect(format!("Player Id {} does not exist in live endpoint", player_id).as_str())
 }
 
 fn get_team_info_entry(endpoints: &FplEndpoints, team_id: u32) -> Option<&TeamInfoEntry> {
-    endpoints.teams_infos.get(&team_id).and_then(|val_res| {
-        Some(&val_res.entry)
-    })
+    endpoints
+        .teams_infos
+        .get(&team_id)
+        .and_then(|val_res| Some(&val_res.entry))
 }

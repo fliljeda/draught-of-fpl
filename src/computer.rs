@@ -19,14 +19,14 @@ pub async fn league_table_computer(
     loop {
         {
             let sleep_ms = 30_000;
-            log::trace!("Sleeping computer thread for {} ms", sleep_ms);
+            tracing::trace!("Sleeping computer thread for {} ms", sleep_ms);
             thread::sleep(time::Duration::from_millis(sleep_ms));
         }
 
         let endpoints = match endpoints_lock.read() {
             Ok(e) => (*e).clone(),
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     "Could not grab read lock for endpoints in computer thread, {}",
                     e
                 );
@@ -34,17 +34,17 @@ pub async fn league_table_computer(
             }
         };
 
-        log::info!("Computing new league table");
+        tracing::info!("Computing new league table");
         let new_table = compute_new_league_table(endpoints);
         match new_table {
             Some(new_table) => {
                 match lock.write() {
                     Ok(mut t) => {
-                        log::trace!("Grabbed the league table lock");
+                        tracing::trace!("Grabbed the league table lock");
                         *t = new_table;
                     }
                     Err(e) => {
-                        log::error!("Could not grab write lock for table: {}", e);
+                        tracing::error!("Could not grab write lock for table: {}", e);
                     }
                 };
             }
