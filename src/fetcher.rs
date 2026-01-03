@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
-use std::{thread, time};
+use std::time;
 
 use futures::join;
 
@@ -26,7 +26,7 @@ pub async fn endpoint_cache_fetcher(
                 "Sleeping fetcher thread for {} ms",
                 fetch_sleep_duration.as_millis()
             );
-            thread::sleep(fetch_sleep_duration);
+            tokio::time::sleep(fetch_sleep_duration).await;
         }
 
         tracing::debug!("Fetching new endpoints");
@@ -147,7 +147,7 @@ async fn fetch_game_with_retries(
                 retries -= 1;
             }
         }
-        thread::sleep(time::Duration::from_millis(retry_wait_ms));
+        tokio::time::sleep(time::Duration::from_millis(retry_wait_ms)).await;
     }
     if let Some(e) = err {
         tracing::error!("Error fetching Game. \nGame: {}", e);
@@ -173,7 +173,7 @@ async fn fetch_details_with_retries(
                 retries -= 1;
             }
         }
-        thread::sleep(time::Duration::from_millis(retry_wait_ms));
+        tokio::time::sleep(time::Duration::from_millis(retry_wait_ms)).await;
     }
     if let Some(e) = err {
         tracing::error!("Error fetching Details. \nDetails: {}", e);

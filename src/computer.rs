@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::sync::{Arc, RwLock};
-use std::{thread, time};
+use std::time;
 
 use crate::propcomp;
 use crate::storage::table::H2HMatch as TableH2HMatch;
@@ -20,7 +20,7 @@ pub async fn league_table_computer(
         {
             let sleep_ms = 30_000;
             tracing::trace!("Sleeping computer thread for {} ms", sleep_ms);
-            thread::sleep(time::Duration::from_millis(sleep_ms));
+            tokio::time::sleep(time::Duration::from_millis(sleep_ms)).await;
         }
 
         let endpoints = match endpoints_lock.read() {

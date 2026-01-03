@@ -36,7 +36,8 @@ pub struct AppState {
     table: Arc<RwLock<LeagueTable>>,
 }
 
-#[tokio::main]
+// Use four worker threads to make sure the two spawned tasks do not starve the main server task, even if they fail to yield.
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
     tracing_subscriber::fmt::init();
     let cli = Cli::parse();
