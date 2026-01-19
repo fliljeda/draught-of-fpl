@@ -20,7 +20,8 @@ services:
 
   dof:
     image: dof:latest
-    command: ["/app/draught-of-fpl"]
+    expose:
+      - "80"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dof.rule=Host(`${HOSTNAME}`)"
@@ -30,12 +31,3 @@ services:
   registry:
     image: registry:3
     restart: always
-    ports:
-      - "127.0.0.1:5000:5000"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.registry.rule=Host(`registry.${HOSTNAME}`)"
-      - "traefik.http.routers.registry.entrypoints=websecure"
-      - "traefik.http.routers.registry.tls.certresolver=le"
-    volumes:
-      - ./registry-data:/var/lib/registry
