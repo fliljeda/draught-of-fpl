@@ -20,6 +20,7 @@ services:
 
   dof:
     image: dof:latest
+    command: ["/app/draught-of-fpl"]
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dof.rule=Host(`${HOSTNAME}`)"

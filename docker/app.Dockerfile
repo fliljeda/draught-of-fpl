@@ -50,4 +50,4 @@ ENV DOF_ASSET_PATH=/app/www/vue
 ENV DOF_SERVER_PORT=80
 
 # Run the application
-ENTRYPOINT ["./draught-of-fpl"]
+ENTRYPOINT ["/app/draught-of-fpl"]
