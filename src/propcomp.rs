@@ -111,11 +111,11 @@ pub fn compute_player_team(endpoints: &FplEndpoints, player_id: u32) -> TableTea
         short_name: String::from(&team.short_name),
         code: team.code as u32,
         shirt_url: format!(
-            "https://draft.premierleague.com/img/shirts/standard/shirt_{}-36.png",
+            "https://draft.premierleague.com/dist/img/shirts/standard/shirt_{}-36.png",
             team.code
         ),
         gk_shirt_url: format!(
-            "https://draft.premierleague.com/img/shirts/standard/shirt_{}_1-36.png",
+            "https://draft.premierleague.com/dist/img/shirts/standard/shirt_{}_1-36.png",
             team.code
         ),
     }
