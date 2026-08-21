@@ -6,4 +6,4 @@ function cleanup {
 }
 trap cleanup INT EXIT TERM
 
-docker run --init --rm -p 8000:80 --name dof dof
+ docker run --init --rm -p 8000:80 --env DOF_LEAGUE_ID=26952 --name dof dof

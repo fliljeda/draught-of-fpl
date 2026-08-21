@@ -43,7 +43,7 @@ USER appuser
 
 # Set environment variables with defaults
 # These can be overridden at runtime
-ENV DOF_LEAGUE_ID=2481
+ENV DOF_LEAGUE_ID=26952
 ENV DOF_LOCAL_FETCH=false
 ENV DOF_LOCAL_URL=
 ENV DOF_ASSET_PATH=/app/www/vue
