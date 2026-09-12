@@ -360,8 +360,8 @@ body {
 
 .bench-player-row > .player-source-icons {
   min-width: 0;
-  margin-left: auto;
-  justify-content: flex-end;
+  margin-left: 0;
+  justify-content: flex-start;
 }
 
 .bench-player-points {
