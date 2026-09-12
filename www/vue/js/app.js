@@ -313,7 +313,7 @@ teamCard = {
                     <strong>{{ player.full_name }}</strong>
                     <span>{{ player.team.name }} · {{ player.team_pos }}</span>
                   </div>
-                  <span class="inline-player-score">{{ getPlayerPointsString(player) }} pts</span>
+                <span class="inline-player-score">{{ getPlayerPointsString(player) }} pts</span>
                 </div>
 
                 <div
