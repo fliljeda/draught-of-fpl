@@ -14,21 +14,21 @@ pub const DEFAULT_LOCAL_API_BASE: &str = "/fpl/api";
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum ClientError {
-    ReqwestError(String),
-    InternalError(String),
-    HttpError(String),
-    LocalError(String),
-    JsonError(String),
+    Reqwest(String),
+    Internal(String),
+    Http(String),
+    Local(String),
+    Json(String),
 }
 
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ClientError::InternalError(msg) => write!(f, "Internal client error: {}", msg),
-            ClientError::ReqwestError(msg) => write!(f, "Reqwest lib error: {}", msg),
-            ClientError::HttpError(msg) => write!(f, "HTTP error: {}", msg),
-            ClientError::LocalError(msg) => write!(f, "Local error: {}", msg),
-            ClientError::JsonError(msg) => write!(f, "Json error: {}", msg),
+            ClientError::Internal(msg) => write!(f, "Internal client error: {}", msg),
+            ClientError::Reqwest(msg) => write!(f, "Reqwest lib error: {}", msg),
+            ClientError::Http(msg) => write!(f, "HTTP error: {}", msg),
+            ClientError::Local(msg) => write!(f, "Local error: {}", msg),
+            ClientError::Json(msg) => write!(f, "Json error: {}", msg),
         }
     }
 }
@@ -51,10 +51,7 @@ fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError>
 where
     T: de::Deserialize<'a>,
 {
-    serde_json::from_str(s).map_err(|e| ClientError::ReqwestError(format!(
-            "Found Error: {}",
-            e
-        )))
+    serde_json::from_str(s).map_err(|e| ClientError::Reqwest(format!("Found Error: {}", e)))
 }
 
 // Basic client methods
@@ -66,7 +63,7 @@ impl Client {
         let reqwest_client = match client_builder.build() {
             Ok(c) => c,
             Err(e) => {
-                return Err(ClientError::ReqwestError(
+                return Err(ClientError::Reqwest(
                     format!("Could not create client with reason: {}", e).to_string(),
                 ))
             }
@@ -120,7 +117,7 @@ impl Client {
         let mut file = match File::open(path) {
             Ok(f) => f,
             Err(e) => {
-                return Err(ClientError::LocalError(format!(
+                return Err(ClientError::Local(format!(
                     "Error opening file with path {} {}",
                     path, e
                 )))
@@ -130,7 +127,7 @@ impl Client {
         match file.read_to_string(&mut contents) {
             Ok(_) => {}
             Err(e) => {
-                return Err(ClientError::LocalError(format!(
+                return Err(ClientError::Local(format!(
                     "Error reading file contents into string: {}",
                     e
                 )))
@@ -145,7 +142,7 @@ impl Client {
         let resp = match self.http_client.get(path).send().await {
             Ok(r) => r,
             Err(e) => {
-                return Err(ClientError::ReqwestError(format!(
+                return Err(ClientError::Reqwest(format!(
                     "Error with sending request: {}",
                     e
                 )))
@@ -155,7 +152,7 @@ impl Client {
         let body = match resp.text().await {
             Ok(b) => b,
             Err(e) => {
-                return Err(ClientError::ReqwestError(format!(
+                return Err(ClientError::Reqwest(format!(
                     "Error with processing request: {}",
                     e
                 )))
@@ -209,7 +206,7 @@ impl Client {
     #[allow(dead_code)]
     pub async fn get_multiple_teams_gw(
         &self,
-        teams: &Vec<u32>,
+        teams: &[u32],
         gw: &u32,
     ) -> HashMap<u32, Result<TeamGw, ClientError>> {
         let futures = teams
@@ -244,7 +241,7 @@ impl Client {
     #[allow(dead_code)]
     pub async fn get_multiple_teams_info(
         &self,
-        teams: &Vec<u32>,
+        teams: &[u32],
     ) -> HashMap<u32, Result<TeamInfo, ClientError>> {
         let futures = teams
             .iter()
@@ -296,10 +293,7 @@ impl Client {
 fn verify_error_code(code: reqwest::StatusCode) -> Result<(), ClientError> {
     match code.is_success() {
         true => Ok(()),
-        false => Err(ClientError::HttpError(format!(
-            "Received error code: {}",
-            code
-        ))),
+        false => Err(ClientError::Http(format!("Received error code: {}", code))),
     }
 }
 
@@ -312,7 +306,7 @@ mod tests {
     async fn local_test_client() -> Result<(), ClientError> {
         let client = Client::new_local(None).unwrap();
 
-        assert_eq!(client.local, true);
+        assert!(client.local);
         assert_eq!(client.get_base_url(), DEFAULT_LOCAL_API_BASE);
 
         let league_code: u32 = 305;
@@ -352,7 +346,7 @@ mod tests {
     #[ignore] //Expensive
     async fn web_test_client() -> Result<(), ClientError> {
         let client = Client::new().unwrap();
-        assert_eq!(client.local, false);
+        assert!(!client.local);
         assert_eq!(client.get_base_url(), FPL_API_BASE);
 
         let game = client.get_game();
@@ -442,12 +436,9 @@ mod tests {
         let team_gws = client.get_multiple_teams_gw(&teams, &gw).await;
 
         for x in team_gws.into_iter() {
-            match x {
-                (u, Err(e)) => {
-                    tracing::error!("Team error {} returned with error", u);
-                    return Err(e);
-                }
-                _ => (),
+            if let (u, Err(e)) = x {
+                tracing::error!("Team error {} returned with error", u);
+                return Err(e);
             }
         }
 
@@ -469,12 +460,9 @@ mod tests {
         let team_gws = client.get_multiple_teams_info(&teams).await;
 
         for x in team_gws.into_iter() {
-            match x {
-                (u, Err(e)) => {
-                    tracing::error!("Team error {} returned with error", u);
-                    return Err(e);
-                }
-                _ => (),
+            if let (u, Err(e)) = x {
+                tracing::error!("Team error {} returned with error", u);
+                return Err(e);
             }
         }
 

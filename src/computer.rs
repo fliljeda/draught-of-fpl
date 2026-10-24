@@ -251,26 +251,30 @@ fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
 }
 
 // Calculates the total number of points for the team
-fn calculate_projected_points(players: &Vec<TablePlayer>) -> i32 {
+fn calculate_projected_points(players: &[TablePlayer]) -> i32 {
     players
         .iter()
-        .filter(|p| match p.play_status {
-            PlayerPlayStatus::Playing | PlayerPlayStatus::SubbedIn { subbed_with: _ } => true,
-            _ => false,
+        .filter(|p| {
+            matches!(
+                p.play_status,
+                PlayerPlayStatus::Playing | PlayerPlayStatus::SubbedIn { subbed_with: _ }
+            )
         })
         .map(|p| p.projected_points)
         .sum()
 }
 
 fn calculate_projected_point_explanation(
-    players: &Vec<TablePlayer>,
+    players: &[TablePlayer],
 ) -> Vec<ProjectedPointsExplanation> {
     let mut explanations: Vec<ProjectedPointsExplanation> = Vec::new();
     players
         .iter()
-        .filter(|p| match p.play_status {
-            PlayerPlayStatus::Playing | PlayerPlayStatus::SubbedIn { subbed_with: _ } => true,
-            _ => false,
+        .filter(|p| {
+            matches!(
+                p.play_status,
+                PlayerPlayStatus::Playing | PlayerPlayStatus::SubbedIn { subbed_with: _ }
+            )
         })
         .for_each(|p| {
             if p.has_played && p.points > 0 {
@@ -301,7 +305,7 @@ fn calculate_projected_point_explanation(
     explanations
 }
 
-fn calculate_play_status(players: &mut Vec<TablePlayer>) {
+fn calculate_play_status(players: &mut [TablePlayer]) {
     // Sort players by pick_number to ensure bench order
     players.sort_by_key(|p1| p1.pick_number);
 
