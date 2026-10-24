@@ -61,7 +61,10 @@ Config keys (`Config.toml` / env): `league_id` / `DOF_LEAGUE_ID` (required),
 `local_fetch` / `DOF_LOCAL_FETCH`, `local_url` / `DOF_LOCAL_URL`,
 `server_port` / `DOF_SERVER_PORT`, `asset_path` / `DOF_ASSET_PATH`.
 
-Keep `cargo clippy --all-targets` warning-free and code `cargo fmt`-formatted.
+**Before every commit**, `cargo clippy --all-targets` must be warning-free and the code
+`cargo fmt`-formatted. If a lint exception is genuinely more convenient, use
+`#[expect(clippy::<lint>, reason = "...")]` (not `#[allow]`) so it warns once it's
+no longer needed. The user runs tests manually; there is no CI.
 Rust edition 2021; the Docker image builds with `rust:1.92`, so don't use features
 newer than that without bumping `docker/app.Dockerfile` in the same branch.
 
@@ -127,15 +130,19 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
 - **One branch per feature/fix**, branched from `master`. Existing naming:
   `issue-<number>-<short-description>` when there is a GitHub issue, otherwise a
   short kebab-case description.
+- **Agents may create branches and commit to them**; the user reviews the commits.
 - **Small commits.** One logical change per commit so each is easy to review.
-  Don't mix formatting/refactoring with behaviour changes. A repo-wide
-  `cargo fmt` goes in its own commit.
+  Don't mix formatting/refactoring with behaviour changes. Mechanical sweeps
+  (a repo-wide `cargo fmt`, a batch of clippy fixes) go in one commit of their own.
 - **Commits made by an AI agent start with `Vibe: `** (e.g.
   `Vibe: Add fixture tests for bonus point calculation`).
 - **Never push, force-push, merge to `master`, or open PRs without asking first.**
+- **No devops changes without asking first:** git hooks, CI/CD workflows, Docker and
+  deployment files (`docker/`, `stack/`). The user doesn't want CI/CD.
 - Never commit secrets: `stack/.env`, `stack/acme.json`, local `Config.toml` values.
 
 ## Planned work
 
 Planned work and known bugs are tracked as GitHub issues, not in this file. Ask
 which issue to work on, and name the branch after it.
+Drafts not yet on GitHub may sit in the gitignored `issues/` folder.
