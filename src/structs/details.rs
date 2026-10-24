@@ -1,5 +1,4 @@
-
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Details {
@@ -18,11 +17,11 @@ pub struct TeamStandings {
     pub league_entry: u32,
     pub rank_sort: Option<u32>,
     pub matches_drawn: Option<u32>, // H2H scoring only
-    pub matches_lost: Option<u32>, // H2H scoring only
+    pub matches_lost: Option<u32>,  // H2H scoring only
     //pub matches_played: Option<u32>, // H2H scoring only. Seems bugged as of 2021-08-21: always set to 38 (#gameweeks)
-    pub matches_won: Option<u32>, // H2H scoring only
+    pub matches_won: Option<u32>,    // H2H scoring only
     pub points_against: Option<i32>, // H2H scoring only
-    pub points_for: Option<i32>, // H2H scoring only
+    pub points_for: Option<i32>,     // H2H scoring only
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -68,9 +67,7 @@ pub struct H2HMatch {
     pub league_entry_2_points: u32,
     pub started: bool,
     pub finished: bool,
-
     // Both Null as of 2021-08-21 for a finished H2HMatch
     //pub winning_league_entry: Option<u32>,
     //pub winning_method: Option<String>, // Unclear what this is as this is developed before first GW is over, but probably something like "w"/"d" and if "d" the winning entry is useless
-
 }

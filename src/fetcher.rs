@@ -60,7 +60,7 @@ pub async fn fetch_and_initialize_endpoints(
 ) -> FplEndpoints {
     let mut last_fetch: Option<time::Instant> = None;
     let endpoints = fetch_new_endpoints(client, context, &mut last_fetch).await;
-    
+
     FplEndpoints::initialize_from_update(endpoints)
 }
 
