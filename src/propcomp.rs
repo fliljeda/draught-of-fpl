@@ -101,8 +101,12 @@ pub fn compute_player_team(endpoints: &FplEndpoints, player_id: u32) -> TableTea
         .teams
         .iter()
         .find(|team| team_id == team.id)
-        .unwrap_or_else(|| panic!("Can't find team with ID: {} for player with id {}",
-            team_id, player_id));
+        .unwrap_or_else(|| {
+            panic!(
+                "Can't find team with ID: {} for player with id {}",
+                team_id, player_id
+            )
+        });
     TableTeam {
         id: team.id,
         name: String::from(&team.name),
@@ -180,8 +184,12 @@ fn calculate_point_sources(fixtures: &[Vec<PointsOrFixture>], fixture_id: u32) -
                 }
             })
         })
-        .unwrap_or_else(|| panic!("Could not find fixture {} when computing point sources (parsing explain object)",
-            fixture_id));
+        .unwrap_or_else(|| {
+            panic!(
+                "Could not find fixture {} when computing point sources (parsing explain object)",
+                fixture_id
+            )
+        });
 
     let mut point_sources = Vec::new();
     for pof in fixture {
@@ -277,9 +285,7 @@ pub fn get_team_name(endpoints: &FplEndpoints, team_id: u32) -> String {
             );
             placeholder
         }
-        Some(entry) => {
-            String::from(&entry.name)
-        }
+        Some(entry) => String::from(&entry.name),
     }
 }
 
@@ -368,5 +374,6 @@ fn get_player_from_live(endpoints: &FplEndpoints, player_id: u32) -> &LiveElemen
 fn get_team_info_entry(endpoints: &FplEndpoints, team_id: u32) -> Option<&TeamInfoEntry> {
     endpoints
         .teams_infos
-        .get(&team_id).map(|val_res| &val_res.entry)
+        .get(&team_id)
+        .map(|val_res| &val_res.entry)
 }

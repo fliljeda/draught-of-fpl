@@ -1,4 +1,3 @@
-
 use crate::structs;
 use std::collections::HashMap;
 
@@ -23,7 +22,6 @@ pub struct FplEndpointsUpdate {
 }
 
 impl FplEndpoints {
-
     pub fn initialize_from_update(update: FplEndpointsUpdate) -> FplEndpoints {
         let FplEndpointsUpdate {
             details,
@@ -31,7 +29,7 @@ impl FplEndpoints {
             live,
             static_info,
             teams_gws,
-            teams_infos
+            teams_infos,
         } = update;
 
         let details = details.unwrap();
@@ -40,13 +38,12 @@ impl FplEndpoints {
         let static_info = static_info.unwrap();
 
         let mut new_teams_gws: HashMap<u32, structs::TeamGw> = HashMap::new();
-        teams_gws.into_iter().for_each( |(key,val)| {
+        teams_gws.into_iter().for_each(|(key, val)| {
             new_teams_gws.insert(key, val.unwrap());
         });
 
-
         let mut new_teams_infos: HashMap<u32, structs::TeamInfo> = HashMap::new();
-        teams_infos.into_iter().for_each( |(key,val)| {
+        teams_infos.into_iter().for_each(|(key, val)| {
             new_teams_infos.insert(key, val.unwrap());
         });
 
@@ -60,16 +57,15 @@ impl FplEndpoints {
         }
     }
 
-    pub fn update(&mut self, other: FplEndpointsUpdate){
+    pub fn update(&mut self, other: FplEndpointsUpdate) {
         let FplEndpointsUpdate {
             details,
             game,
             live,
             static_info,
             teams_gws,
-            teams_infos
+            teams_infos,
         } = other;
-
 
         if let Some(game) = game {
             self.game = game
