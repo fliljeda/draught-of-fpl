@@ -80,14 +80,16 @@ pub async fn fetch_new_endpoints(
     let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
     let (game, details): (Option<Game>, Option<Details>) = join!(game, details);
 
-    game.as_ref().map(|game| match game.current_event {
-        Some(current_gw) => {
-            gw = current_gw;
+    if let Some(game) = game.as_ref() {
+        match game.current_event {
+            Some(current_gw) => {
+                gw = current_gw;
+            }
+            None => {
+                tracing::error!("Did not find new GW in fetch, using GW: {}", gw);
+            }
         }
-        None => {
-            tracing::error!("Did not find new GW in fetch, using GW: {}", gw);
-        }
-    });
+    }
 
     // Start http_calls
     let live = client.get_gw_points_live(&gw);

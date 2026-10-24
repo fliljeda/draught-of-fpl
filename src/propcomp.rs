@@ -168,10 +168,7 @@ pub fn get_player_point_sources(endpoints: &FplEndpoints, player_id: u32) -> Vec
 }
 
 // The body of this function may look stupid. But the data structure chosen by the FPL team is stupid
-fn calculate_point_sources(
-    fixtures: &Vec<Vec<PointsOrFixture>>,
-    fixture_id: u32,
-) -> Vec<LivePoint> {
+fn calculate_point_sources(fixtures: &[Vec<PointsOrFixture>], fixture_id: u32) -> Vec<LivePoint> {
     let fixture = fixtures
         .iter()
         .find(|x| {
