@@ -7,10 +7,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7"
+axum = "0.8"
 clap = { version = "4.4", features = ["derive"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+tower = "0.5"
+tower-http = { version = "0.7", features = ["cors", "trace", "fs"] }
 tokio = { version = "1.20", features = ["full"] }
 log = "0.4"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }

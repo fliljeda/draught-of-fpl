@@ -88,9 +88,9 @@ async fn main() {
     );
     // Build the router with CORS middleware
     let app = Router::new()
-        .route("/fpl/player/:id", get(get_player))
+        .route("/fpl/player/{id}", get(get_player))
         .route("/table", get(get_table))
-        .nest_service("/", frontend)
+        .fallback_service(frontend)
         .with_state(state)
         .layer(CorsLayer::permissive());
 
