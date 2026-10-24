@@ -45,13 +45,13 @@ pub async fn endpoint_cache_fetcher(
 
 fn handle_error_into_option<T>(res: Result<T, ClientError>) -> Option<T> {
     let the_type = std::any::type_name::<T>();
-    return match res {
+    match res {
         Ok(x) => Some(x),
         Err(e) => {
             tracing::error!("Error retrieving {}: {}", the_type, e);
             None
         }
-    };
+    }
 }
 
 pub async fn fetch_and_initialize_endpoints(
@@ -59,9 +59,9 @@ pub async fn fetch_and_initialize_endpoints(
     context: crate::AppContext,
 ) -> FplEndpoints {
     let mut last_fetch: Option<time::Instant> = None;
-    let endpoints = fetch_new_endpoints(&client, context, &mut last_fetch).await;
-    let endpoints = FplEndpoints::initialize_from_update(endpoints);
-    endpoints
+    let endpoints = fetch_new_endpoints(client, context, &mut last_fetch).await;
+    
+    FplEndpoints::initialize_from_update(endpoints)
 }
 
 pub async fn fetch_new_endpoints(
@@ -152,7 +152,7 @@ async fn fetch_game_with_retries(
     if let Some(e) = err {
         tracing::error!("Error fetching Game. \nGame: {}", e);
     }
-    return None;
+    None
 }
 
 async fn fetch_details_with_retries(
@@ -163,7 +163,7 @@ async fn fetch_details_with_retries(
 ) -> Option<Details> {
     let mut err: Option<ClientError> = None;
     while retries > 0 {
-        let details = client.get_league_details(&league_code).await;
+        let details = client.get_league_details(league_code).await;
         match details {
             Ok(d) => {
                 return Some(d);
@@ -178,5 +178,5 @@ async fn fetch_details_with_retries(
     if let Some(e) = err {
         tracing::error!("Error fetching Details. \nDetails: {}", e);
     }
-    return None;
+    None
 }

@@ -153,20 +153,20 @@ pub struct Team {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Position {
     // The number of this position as used by FPL (1 GK, 2 DEF, 3 MID, 4 FWD)
-    GK = 1,
-    DEF = 2,
-    MID = 3,
-    FWD = 4,
+    Gk = 1,
+    Def = 2,
+    Mid = 3,
+    Fwd = 4,
 }
 
 impl Position {
     pub fn from_number(number: u32) -> Position {
         match number {
-            1 => Self::GK,
-            2 => Self::DEF,
-            3 => Self::MID,
-            4 => Self::FWD,
-            _ => Self::GK,
+            1 => Self::Gk,
+            2 => Self::Def,
+            3 => Self::Mid,
+            4 => Self::Fwd,
+            _ => Self::Gk,
         }
     }
 }
@@ -193,15 +193,15 @@ pub struct PointSource {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Scoring {
     H2H,
-    CLASSIC,
+    Classic,
 }
 
 impl Scoring {
     pub fn from_fpl_str(fpl_scoring_str: &str) -> Scoring {
         match fpl_scoring_str {
-            "c" => Scoring::CLASSIC,
+            "c" => Scoring::Classic,
             "h" => Scoring::H2H,
-            _ => Scoring::CLASSIC,
+            _ => Scoring::Classic,
         }
     }
 }

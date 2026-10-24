@@ -51,12 +51,10 @@ fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError>
 where
     T: de::Deserialize<'a>,
 {
-    serde_json::from_str(&s).or_else(|e| {
-        return Err(ClientError::ReqwestError(String::from(format!(
+    serde_json::from_str(s).map_err(|e| ClientError::ReqwestError(format!(
             "Found Error: {}",
             e
-        ))));
-    })
+        )))
 }
 
 // Basic client methods
@@ -147,20 +145,20 @@ impl Client {
         let resp = match self.http_client.get(path).send().await {
             Ok(r) => r,
             Err(e) => {
-                return Err(ClientError::ReqwestError(String::from(format!(
+                return Err(ClientError::ReqwestError(format!(
                     "Error with sending request: {}",
                     e
-                ))))
+                )))
             }
         };
 
         let body = match resp.text().await {
             Ok(b) => b,
             Err(e) => {
-                return Err(ClientError::ReqwestError(String::from(format!(
+                return Err(ClientError::ReqwestError(format!(
                     "Error with processing request: {}",
                     e
-                ))))
+                )))
             }
         };
 
@@ -216,7 +214,7 @@ impl Client {
     ) -> HashMap<u32, Result<TeamGw, ClientError>> {
         let futures = teams
             .iter()
-            .map(|team_id| self.get_team_gw(&team_id, &gw))
+            .map(|team_id| self.get_team_gw(team_id, gw))
             .collect::<Vec<_>>();
 
         let team_gws: Vec<Result<TeamGw, ClientError>> = join_all(futures).await;
@@ -250,7 +248,7 @@ impl Client {
     ) -> HashMap<u32, Result<TeamInfo, ClientError>> {
         let futures = teams
             .iter()
-            .map(|team_id| self.get_team_info(&team_id))
+            .map(|team_id| self.get_team_info(team_id))
             .collect::<Vec<_>>();
 
         let team_infos: Vec<Result<TeamInfo, ClientError>> = join_all(futures).await;
@@ -298,10 +296,10 @@ impl Client {
 fn verify_error_code(code: reqwest::StatusCode) -> Result<(), ClientError> {
     match code.is_success() {
         true => Ok(()),
-        false => Err(ClientError::HttpError(String::from(format!(
+        false => Err(ClientError::HttpError(format!(
             "Received error code: {}",
             code
-        )))),
+        ))),
     }
 }
 

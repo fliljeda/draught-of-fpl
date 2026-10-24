@@ -50,7 +50,7 @@ pub fn get_player_bps(endpoints: &FplEndpoints, player_id: u32) -> i32 {
 
 pub fn get_player_injury_status(endpoints: &FplEndpoints, player_id: u32) -> InjuryStatus {
     let injury_status_str = &get_player_from_static(endpoints, player_id).status;
-    InjuryStatus::from_fpl_str(&injury_status_str)
+    InjuryStatus::from_fpl_str(injury_status_str)
 }
 
 pub fn get_player_news(endpoints: &FplEndpoints, player_id: u32) -> Option<String> {
@@ -101,12 +101,10 @@ pub fn compute_player_team(endpoints: &FplEndpoints, player_id: u32) -> TableTea
         .teams
         .iter()
         .find(|team| team_id == team.id)
-        .expect(&format!(
-            "Can't find team with ID: {} for player with id {}",
-            team_id, player_id
-        ));
+        .unwrap_or_else(|| panic!("Can't find team with ID: {} for player with id {}",
+            team_id, player_id));
     TableTeam {
-        id: team.id as u32,
+        id: team.id,
         name: String::from(&team.name),
         short_name: String::from(&team.short_name),
         code: team.code as u32,
@@ -178,17 +176,15 @@ fn calculate_point_sources(
         .iter()
         .find(|x| {
             x.iter().any(|y| {
-                return if let Fixture(n) = y {
+                if let Fixture(n) = y {
                     *n == fixture_id
                 } else {
                     false
-                };
+                }
             })
         })
-        .expect(&format!(
-            "Could not find fixture {} when computing point sources (parsing explain object)",
-            fixture_id
-        ));
+        .unwrap_or_else(|| panic!("Could not find fixture {} when computing point sources (parsing explain object)",
+            fixture_id));
 
     let mut point_sources = Vec::new();
     for pof in fixture {
@@ -285,7 +281,7 @@ pub fn get_team_name(endpoints: &FplEndpoints, team_id: u32) -> String {
             placeholder
         }
         Some(entry) => {
-            return String::from(&entry.name);
+            String::from(&entry.name)
         }
     }
 }
@@ -301,7 +297,7 @@ pub fn get_team_owner_name(endpoints: &FplEndpoints, team_id: u32) -> String {
             placeholder
         }
         Some(entry) => {
-            return format!("{} {}", &entry.player_first_name, &entry.player_last_name);
+            format!("{} {}", entry.player_first_name, entry.player_last_name)
         }
     }
 }
@@ -330,7 +326,7 @@ pub fn get_current_h2h_opponent(endpoints: &FplEndpoints, team_id: u32) -> u32 {
             return get_entry_id_from_team_id(endpoints, opponent);
         }
     }
-    return 0;
+    0
 }
 
 // Returns 0 if ID does not exist.
@@ -361,7 +357,7 @@ fn get_player_from_static(endpoints: &FplEndpoints, player_id: u32) -> &StaticEl
         .static_info
         .elements
         .get(i)
-        .expect(format!("Player Id {} does not exist in bootstrap-static", player_id).as_str())
+        .unwrap_or_else(|| panic!("Player Id {} does not exist in bootstrap-static", player_id))
 }
 
 fn get_player_from_live(endpoints: &FplEndpoints, player_id: u32) -> &LiveElement {
@@ -369,12 +365,11 @@ fn get_player_from_live(endpoints: &FplEndpoints, player_id: u32) -> &LiveElemen
         .live
         .elements
         .get(player_id.to_string().as_str())
-        .expect(format!("Player Id {} does not exist in live endpoint", player_id).as_str())
+        .unwrap_or_else(|| panic!("Player Id {} does not exist in live endpoint", player_id))
 }
 
 fn get_team_info_entry(endpoints: &FplEndpoints, team_id: u32) -> Option<&TeamInfoEntry> {
     endpoints
         .teams_infos
-        .get(&team_id)
-        .and_then(|val_res| Some(&val_res.entry))
+        .get(&team_id).map(|val_res| &val_res.entry)
 }

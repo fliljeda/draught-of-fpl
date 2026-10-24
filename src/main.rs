@@ -11,7 +11,6 @@ pub use initializer::AppContext;
 
 use crate::client::Client;
 use crate::storage::{FplEndpoints, LeagueTable};
-use tracing_subscriber;
 
 mod client;
 mod computer;
@@ -110,7 +109,7 @@ async fn get_player(
 ) -> Result<String, (StatusCode, String)> {
     match state.endpoints.read() {
         Ok(ep) => {
-            let full_name = propcomp::get_player_full_name(&*ep, id);
+            let full_name = propcomp::get_player_full_name(&ep, id);
             Ok(format!("Player: {} with id {}\n", full_name, id))
         }
         Err(_) => Err((

@@ -36,7 +36,7 @@ impl AppConfig {
 
     fn initialize_from_file(config_file_path: String) -> AppConfig {
         let config_file_content = fs::read_to_string(&config_file_path)
-            .expect(format!("Failed to read config file: {}", config_file_path).as_str());
+            .unwrap_or_else(|_| panic!("Failed to read config file: {}", config_file_path));
         let config: AppConfig = toml::from_str(config_file_content.as_str())
             .expect("Could not parse application config file");
         config
@@ -58,15 +58,9 @@ impl AppConfig {
             Err(_) => None,
         };
 
-        let local_url = match env::var("DOF_LOCAL_URL") {
-            Ok(val) => Some(val),
-            Err(_) => None,
-        };
+        let local_url = env::var("DOF_LOCAL_URL").ok();
 
-        let asset_path = match env::var("DOF_ASSET_PATH") {
-            Ok(val) => Some(val),
-            Err(_) => None,
-        };
+        let asset_path = env::var("DOF_ASSET_PATH").ok();
 
         let server_port = match env::var("DOF_SERVER_PORT") {
             Ok(val) => Some(val.parse().expect("DOF_SERVER_PORT must be a valid u16")),

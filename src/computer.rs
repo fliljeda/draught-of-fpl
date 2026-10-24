@@ -36,19 +36,16 @@ pub async fn league_table_computer(
 
         tracing::debug!("Computing new league table");
         let new_table = compute_new_league_table(endpoints);
-        match new_table {
-            Some(new_table) => {
-                match lock.write() {
-                    Ok(mut t) => {
-                        tracing::trace!("Grabbed the league table lock");
-                        *t = new_table;
-                    }
-                    Err(e) => {
-                        tracing::error!("Could not grab write lock for table: {}", e);
-                    }
-                };
-            }
-            None => (),
+        if let Some(new_table) = new_table {
+            match lock.write() {
+                Ok(mut t) => {
+                    tracing::trace!("Grabbed the league table lock");
+                    *t = new_table;
+                }
+                Err(e) => {
+                    tracing::error!("Could not grab write lock for table: {}", e);
+                }
+            };
         }
     }
 }
@@ -72,7 +69,7 @@ fn compute_all_league_matches(
     endpoints: &FplEndpoints,
 ) -> Option<HashMap<u32, Vec<TableH2HMatch>>> {
     match Scoring::from_fpl_str(&endpoints.details.league.scoring) {
-        Scoring::CLASSIC => None,
+        Scoring::Classic => None,
         Scoring::H2H => {
             let mut league_matches: HashMap<u32, Vec<TableH2HMatch>> = HashMap::new();
             let n_gameweeks: u32 = endpoints
@@ -96,7 +93,7 @@ fn compute_gw_league_matches(gw: u32, endpoints: &FplEndpoints) -> Vec<TableH2HM
         Option::Some(league_matches) => league_matches
             .iter()
             .filter(|league_match| league_match.event == gw)
-            .map(|league_match| compute_table_league_match(league_match))
+            .map(compute_table_league_match)
             .collect(),
     }
 }
@@ -201,10 +198,10 @@ fn compute_h2h_info(endpoints: &FplEndpoints, id: u32) -> Option<H2HInfo> {
 
 fn extract_players(endpoints: &FplEndpoints, team_id: u32) -> Vec<TablePlayer> {
     let mut players = Vec::new();
-    let team_entry = endpoints.teams_gws.get(&team_id).expect(&format!(
-        "Could not find team GW info from team {}",
-        team_id
-    ));
+    let team_entry = endpoints
+        .teams_gws
+        .get(&team_id)
+        .unwrap_or_else(|| panic!("Could not find team GW info from team {}", team_id));
     for pick in team_entry.picks.iter() {
         let player_id = pick.element as u32;
 
@@ -306,7 +303,7 @@ fn calculate_projected_point_explanation(
 
 fn calculate_play_status(players: &mut Vec<TablePlayer>) {
     // Sort players by pick_number to ensure bench order
-    players.sort_by(|p1, p2| p1.pick_number.cmp(&p2.pick_number));
+    players.sort_by_key(|p1| p1.pick_number);
 
     struct Substitution {
         player_in: u32,
@@ -328,12 +325,12 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
     // Handle goalkeeper substitutions first
     for player in players
         .iter()
-        .filter(|p| p.on_field && p.team_pos == Position::GK)
+        .filter(|p| p.on_field && p.team_pos == Position::Gk)
     {
         if !player.has_played && player.fixtures_finished {
             if let Some(other_gk) = players
                 .iter()
-                .find(|p| p.team_pos == Position::GK && p.id != player.id)
+                .find(|p| p.team_pos == Position::Gk && p.id != player.id)
             {
                 if other_gk.has_played || other_gk.has_upcoming_fixtures {
                     subs.push(Substitution {
@@ -346,7 +343,7 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
     }
 
     // First priority: Ensure minimum position requirements
-    let position_requirements = [(Position::DEF, 3), (Position::MID, 2), (Position::FWD, 1)]; // (position, min_required)
+    let position_requirements = [(Position::Def, 3), (Position::Mid, 2), (Position::Fwd, 1)]; // (position, min_required)
 
     for (pos, min_required) in position_requirements.iter() {
         // Check if we need more players in this position
@@ -402,7 +399,7 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
     let playing_outfield_count = players
         .iter()
         .filter(|p| {
-            p.team_pos != Position::GK
+            p.team_pos != Position::Gk
                 && (p.play_status == PlayerPlayStatus::Playing
                     || matches!(p.play_status, PlayerPlayStatus::SubbedIn { .. }))
         })
@@ -420,7 +417,7 @@ fn calculate_play_status(players: &mut Vec<TablePlayer>) {
 
                 p.selected_on_bench()
                     && !p.on_field
-                    && p.team_pos != Position::GK
+                    && p.team_pos != Position::Gk
                     && played_or_will_play
                     && not_already_in_sub_list
             })
