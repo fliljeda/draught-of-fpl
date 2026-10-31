@@ -74,6 +74,24 @@ newer than that without bumping `docker/app.Dockerfile` in the same branch.
 user to run `cargo test` / `cargo clippy` and paste the output — never claim code
 compiles or tests pass without having seen it.
 
+## Code style
+
+The owner has to be able to read and understand every change. Code that does less
+but is easy to follow beats code that handles more.
+
+- **Only build what has an effect now.** No metadata, auto-detection, safety layers or
+  options for possible later use. If an extra seems useful, mention it in a sentence
+  instead of building it. `db/snapshot.py` was cut from about 300 lines to under 100 for
+  this reason.
+- **Prefer plain, top-to-bottom code** over helpers and abstractions, including in
+  scripts and tools. A plain error from a failed step is fine.
+- **In tests, obvious beats short.** Write one explicit line per value, such as
+  `expect_player("Gabriel", "points", 17);`, with no loops, lists or tuples of expected
+  values. Repetition and long test files are fine. A failure should name what broke, and
+  test names should describe the specific behaviour or value.
+- **Keep readable names that survive change,** such as a `TEAM_1` constant holding the
+  team's name rather than a number that means nothing on its own.
+
 ## FPL API notes and quirks
 
 Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
