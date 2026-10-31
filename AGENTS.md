@@ -41,6 +41,7 @@ Config (file or env) ─► initializer ─► Client (web or local files)
 - `src/structs/` – serde models of the raw FPL API responses.
 - `www/vue/` – frontend: `index.html`, `js/app.js` (Vue app + components), `js/functions.js`, `js/config.js`, `styles.css`.
 - `db/create-db.py` – snapshots the FPL API into `db/api/` for offline runs (`local_fetch = true`).
+- `db/snapshot.py` – saves the FPL API responses to `tests/snapshots/<name>/api/...` with member names replaced; `--complete` includes all gameweeks so far.
 - `docker/`, `stack/` – container build and the Traefik + docker-compose deployment (`stack/DEPLOYREADME.md`).
 
 ## Commands
@@ -52,6 +53,7 @@ cargo test
 cargo clippy --all-targets
 cargo fmt
 python db/create-db.py <league_id> # run from db/; builds db/api for local_fetch
+python db/snapshot.py <league_id> <name> [--complete] # save a test snapshot
 ```
 
 Server listens on `server_port` (default 8000) and serves the frontend from
