@@ -47,7 +47,7 @@ Config (file or env) ─► initializer ─► Client (web or local files)
 
 ```bash
 cargo build
-cargo run -- -f Config.toml        # without -f, config comes from DOF_* env vars
+cargo run -- -f Config.toml        # copy Config.example.toml first; without -f, config comes from DOF_* env vars
 cargo test
 cargo clippy --all-targets
 cargo fmt
@@ -139,7 +139,8 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
 - **Never push, force-push, merge to `master`, or open PRs without asking first.**
 - **No devops changes without asking first:** git hooks, CI/CD workflows, Docker and
   deployment files (`docker/`, `stack/`). The user doesn't want CI/CD.
-- Never commit secrets: `stack/.env`, `stack/acme.json`, local `Config.toml` values.
+- Never commit secrets. `stack/.env`, `stack/acme.json` and `Config.toml` are gitignored
+  local copies of the tracked `.example` files, which must only hold example values.
 
 ## Planned work
 
