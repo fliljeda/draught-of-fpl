@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 axum = "0.8"
 clap = { version = "4.6", features = ["derive"] }
-tower = "0.5"
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.7", features = ["cors", "trace", "fs"] }
 tokio = { version = "1.54", features = ["full"] }
 log = "0.4"
