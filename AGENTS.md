@@ -48,7 +48,7 @@ Config (file or env) ─► initializer ─► Client (web or local files)
 
 ```bash
 cargo build
-cargo run -- -f Config.toml        # without -f, config comes from DOF_* env vars
+cargo run -- -f Config.toml        # copy Config.example.toml first; without -f, config comes from DOF_* env vars
 cargo test
 cargo clippy --all-targets
 cargo fmt
