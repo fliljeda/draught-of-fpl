@@ -15,6 +15,8 @@ use crate::storage::{FplEndpoints, LeagueTable};
 mod client;
 mod computer;
 mod fetcher;
+#[cfg(test)]
+mod full_flow_tests;
 mod initializer;
 mod propcomp;
 mod storage;
@@ -80,19 +82,11 @@ async fn main() {
         endpoints_compute_clone,
     ));
 
-    let frontend = tower_http::services::ServeDir::new(
-        app_config
-            .asset_path
-            .clone()
-            .unwrap_or_else(|| "./www/vue".into()),
-    );
-    // Build the router with CORS middleware
-    let app = Router::new()
-        .route("/fpl/player/{id}", get(get_player))
-        .route("/table", get(get_table))
-        .fallback_service(frontend)
-        .with_state(state)
-        .layer(CorsLayer::permissive());
+    let asset_path = app_config
+        .asset_path
+        .clone()
+        .unwrap_or_else(|| "./www/vue".into());
+    let app = build_router(state, asset_path);
 
     let port = app_config.server_port.unwrap_or(8000);
     let serve_addr = format!("0.0.0.0:{port}");
@@ -101,6 +95,17 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(serve_addr).await.unwrap();
 
     axum::serve(listener, app).await.unwrap();
+}
+
+// Build the router with CORS middleware
+fn build_router(state: AppState, asset_path: String) -> Router {
+    let frontend = tower_http::services::ServeDir::new(asset_path);
+    Router::new()
+        .route("/fpl/player/{id}", get(get_player))
+        .route("/table", get(get_table))
+        .fallback_service(frontend)
+        .with_state(state)
+        .layer(CorsLayer::permissive())
 }
 
 async fn get_player(

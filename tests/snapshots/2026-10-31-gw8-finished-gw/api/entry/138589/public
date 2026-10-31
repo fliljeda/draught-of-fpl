@@ -1,0 +1,20 @@
+{
+  "entry": {
+    "event_points": 50,
+    "favourite_team": null,
+    "id": 138589,
+    "league_set": [
+      26952
+    ],
+    "name": "Team 01",
+    "overall_points": 339,
+    "player_first_name": "Manager",
+    "player_last_name": "01",
+    "region_name": null,
+    "region_code_short": null,
+    "region_code_long": null,
+    "started_event": 1,
+    "transactions_event": 2,
+    "transactions_total": 15
+  }
+}

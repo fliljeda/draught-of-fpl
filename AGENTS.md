@@ -30,7 +30,7 @@ Config (file or env) ─► initializer ─► Client (web or local files)
                                 Browser: www/vue polls /table every 30s
 ```
 
-- `src/main.rs` – CLI (`-f <config>`), wiring, Axum routes (`/table`, `/fpl/player/:id`, static files).
+- `src/main.rs` – CLI (`-f <config>`), wiring, Axum routes (`/table`, `/fpl/player/{id}`, static files).
 - `src/initializer.rs` – `AppConfig` (TOML file or `DOF_*` env vars) and `AppContext` (league id, team ids, intervals).
 - `src/client/` – HTTP/local-file client for each FPL endpoint.
 - `src/fetcher.rs` – periodic fetch; failed endpoints are `None` and keep their previous value (`FplEndpoints::update`).
@@ -41,6 +41,7 @@ Config (file or env) ─► initializer ─► Client (web or local files)
 - `src/structs/` – serde models of the raw FPL API responses.
 - `www/vue/` – frontend: `index.html`, `js/app.js` (Vue app + components), `js/functions.js`, `js/config.js`, `styles.css`.
 - `db/create-db.py` – snapshots the FPL API into `db/api/` for offline runs (`local_fetch = true`).
+- `db/snapshot.py` – saves the FPL API responses to `tests/snapshots/<name>/api/...` with member names replaced; `--complete` includes all gameweeks so far.
 - `docker/`, `stack/` – container build and the Traefik + docker-compose deployment (`stack/DEPLOYREADME.md`).
 
 ## Commands
@@ -52,6 +53,7 @@ cargo test
 cargo clippy --all-targets
 cargo fmt
 python db/create-db.py <league_id> # run from db/; builds db/api for local_fetch
+python db/snapshot.py <league_id> <name> [--complete] # save a test snapshot
 ```
 
 Server listens on `server_port` (default 8000) and serves the frontend from
@@ -61,16 +63,36 @@ Config keys (`Config.toml` / env): `league_id` / `DOF_LEAGUE_ID` (required),
 `local_fetch` / `DOF_LOCAL_FETCH`, `local_url` / `DOF_LOCAL_URL`,
 `server_port` / `DOF_SERVER_PORT`, `asset_path` / `DOF_ASSET_PATH`.
 
-**Before every commit**, `cargo clippy --all-targets` must be warning-free and the code
-`cargo fmt`-formatted. If a lint exception is genuinely more convenient, use
-`#[expect(clippy::<lint>, reason = "...")]` (not `#[allow]`) so it warns once it's
-no longer needed. The user runs tests manually; there is no CI.
+**Before every commit**, `cargo test` must pass, `cargo clippy --all-targets` must be
+warning-free and the code `cargo fmt`-formatted. If a lint exception is genuinely more
+convenient, use `#[expect(clippy::<lint>, reason = "...")]` (not `#[allow]`) so it warns
+once it's no longer needed. There is no CI.
 Rust edition 2021; the Docker image builds with `rust:1.92`, so don't use features
-newer than that without bumping `docker/app.Dockerfile` in the same branch.
+newer than that without bumping `docker/app.Dockerfile` in the same branch. A local
+checkout may run a newer toolchain through a rustup override, so a clean local build
+doesn't prove it builds on 1.92.
 
 **Agent sandboxes may not reach crates.io.** If you cannot build, say so and ask the
-user to run `cargo test` / `cargo clippy` and paste the output — never claim code
+owner to run `cargo test` / `cargo clippy` and paste the output — never claim code
 compiles or tests pass without having seen it.
+
+## Code style
+
+The owner has to be able to read and understand every change. Code that does less
+but is easy to follow beats code that handles more.
+
+- **Ask when in doubt.** If you are unsure what the owner would like, or before adding to
+  code that is already complex, ask first. Reaching the goal together is quicker than
+  reworking it afterwards.
+- **Only build what has an effect now.** No metadata, auto-detection, safety layers or
+  options for possible later use. If an extra seems useful, mention it in a sentence
+  instead of building it.
+- **In tests, obvious beats short.** Write one explicit line per value, such as
+  `expect_player("Gabriel", "points", 17);`, with no loops, lists or tuples of expected
+  values. Repetition and long test files are fine. A failure should name what broke, and
+  test names should describe the specific behaviour or value.
+- **Keep readable names that survive change,** such as a `TEAM_1` constant holding the
+  team's name rather than a number that means nothing on its own.
 
 ## FPL API notes and quirks
 
@@ -86,9 +108,10 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
   list of point sources, index 1 is the fixture id (see `PointsOrFixture`).
 - **Picks:** `position` 1–11 is the starting XI, 12–15 the bench in priority order.
   `subs` lists auto-subs FPL has already made.
-- **Bonus points** are only added by FPL after a match; until then we project them
-  from BPS in `calculate_bonus_points`. Projected = official points + projected bonus
-  + projected auto-subs.
+- **Bonus points** were already in FPL's live data during matches, including a match in
+  progress, in the `2026-10-31-midweek` snapshot. `calculate_bonus_points` projects bonus
+  from BPS only for players with no bonus in `explain`, and it changes no result in either
+  committed snapshot. Projected = official points + projected bonus + projected auto-subs.
 - `finished_provisional` is what we treat as "fixture is over".
 - Be polite to FPL: don't shorten fetch intervals or add per-player requests without asking.
 
@@ -112,16 +135,17 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
 
 ## Testing
 
-- **Tests must not need the network or a local `db/api` snapshot.** Prefer small,
-  hand-written fixtures: build structs inline with `serde_json::json!`
-  or load trimmed JSON files from a fixtures folder.
-- Preferred direction: keep computations as pure functions over `FplEndpoints`
-  (or smaller inputs) so tests can build that state from fixtures without a
-  `Client`. Put shared JSON fixtures in `tests/fixtures/` and builder helpers in a
-  `#[cfg(test)]` module. If the fetcher needs testing, put the client behind a trait
-  with a fake implementation rather than reading files from disk.
+- **Tests must not need the network or the gitignored `db/api` folder.** Snapshots
+  committed under `tests/snapshots/` are fine.
+- **Full-flow regression tests are the main tests.** They live in `src/full_flow_tests/`,
+  one file per snapshot in `tests/snapshots/`. They run the client, fetcher, computer and
+  router on saved responses, with one explicit expect line per value and no loops, so a
+  failure names what broke. Run them with `cargo test full_flow`.
+- For a case no snapshot covers, a small hand-written test with `serde_json::json!` is
+  fine. Computations written as pure functions over `FplEndpoints` (or smaller inputs)
+  are the easiest to test that way.
 - Logic that most needs tests: `calculate_play_status` (auto-sub projection),
-  `calculate_bonus_points`, projected-point totals.
+  projected-point totals, and `calculate_bonus_points`, which no snapshot exercises yet.
 - When fixing a bug, add a test that reproduces it first when practical.
 - Tests that hit the real FPL API must be `#[ignore]`.
 
@@ -130,7 +154,7 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
 - **One branch per feature/fix**, branched from `master`. Existing naming:
   `issue-<number>-<short-description>` when there is a GitHub issue, otherwise a
   short kebab-case description.
-- **Agents may create branches and commit to them**; the user reviews the commits.
+- **Agents may create branches and commit to them**; the owner reviews the commits.
 - **Small commits.** One logical change per commit so each is easy to review.
   Don't mix formatting/refactoring with behaviour changes. Mechanical sweeps
   (a repo-wide `cargo fmt`, a batch of clippy fixes) go in one commit of their own.
@@ -138,9 +162,8 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
   `Vibe: Add fixture tests for bonus point calculation`).
 - **Never push, force-push, merge to `master`, or open PRs without asking first.**
 - **No devops changes without asking first:** git hooks, CI/CD workflows, Docker and
-  deployment files (`docker/`, `stack/`). The user doesn't want CI/CD.
-- Never commit secrets. `stack/.env`, `stack/acme.json` and `Config.toml` are gitignored
-  local copies of the tracked `.example` files, which must only hold example values.
+  deployment files (`docker/`, `stack/`). The owner doesn't want CI/CD.
+- Never commit secrets: `stack/.env`, `stack/acme.json`, local `Config.toml` values.
 
 ## Planned work
 
