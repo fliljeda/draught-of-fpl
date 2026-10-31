@@ -117,6 +117,10 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
 - **Tests must not need the network or a local `db/api` snapshot.** Prefer small,
   hand-written fixtures: build structs inline with `serde_json::json!`
   or load trimmed JSON files from a fixtures folder.
+- **Full-flow regression tests** live in `src/full_flow_tests/`, one file per snapshot in
+  `tests/snapshots/`. They run the client, fetcher, computer and router on saved responses,
+  with one explicit expect line per value and no loops, so a failure names what broke.
+  Run them with `cargo test full_flow`.
 - Preferred direction: keep computations as pure functions over `FplEndpoints`
   (or smaller inputs) so tests can build that state from fixtures without a
   `Client`. Put shared JSON fixtures in `tests/fixtures/` and builder helpers in a

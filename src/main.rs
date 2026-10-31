@@ -15,6 +15,8 @@ use crate::storage::{FplEndpoints, LeagueTable};
 mod client;
 mod computer;
 mod fetcher;
+#[cfg(test)]
+mod full_flow_tests;
 mod initializer;
 mod propcomp;
 mod storage;
