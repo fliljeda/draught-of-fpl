@@ -160,6 +160,8 @@ Base: `https://draft.premierleague.com/api`. Endpoints used: `/game`,
   (a repo-wide `cargo fmt`, a batch of clippy fixes) go in one commit of their own.
 - **Commits made by an AI agent start with `Vibe: `** (e.g.
   `Vibe: Add fixture tests for bonus point calculation`).
+- **No AI attribution lines.** Do not add `Co-Authored-By` or "Generated with" lines to
+  commits or pull requests.
 - **Never push, force-push, merge to `master`, or open PRs without asking first.**
 - **No devops changes without asking first:** git hooks, CI/CD workflows, Docker and
   deployment files (`docker/`, `stack/`). The owner doesn't want CI/CD.
