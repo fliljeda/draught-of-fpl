@@ -79,12 +79,12 @@ compiles or tests pass without having seen it.
 The owner has to be able to read and understand every change. Code that does less
 but is easy to follow beats code that handles more.
 
+- **Ask when in doubt.** If you are unsure what the owner would like, or before adding to
+  code that is already complex, ask first. Reaching the goal together is quicker than
+  reworking it afterwards.
 - **Only build what has an effect now.** No metadata, auto-detection, safety layers or
   options for possible later use. If an extra seems useful, mention it in a sentence
-  instead of building it. `db/snapshot.py` was cut from about 300 lines to under 100 for
-  this reason.
-- **Prefer plain, top-to-bottom code** over helpers and abstractions, including in
-  scripts and tools. A plain error from a failed step is fine.
+  instead of building it.
 - **In tests, obvious beats short.** Write one explicit line per value, such as
   `expect_player("Gabriel", "points", 17);`, with no loops, lists or tuples of expected
   values. Repetition and long test files are fine. A failure should name what broke, and
