@@ -28,7 +28,7 @@ pub struct Element {
     pub ep_this: Option<i32>,
     pub status: String,
     pub penalties_missed: Option<i32>,
-    pub id: Option<i32>,
+    pub id: u32,
     pub element_type: i32,
     pub news_updated: Option<i32>,
     pub chance_of_playing_this_round: Option<i32>,
