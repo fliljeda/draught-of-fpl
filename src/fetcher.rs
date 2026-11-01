@@ -94,8 +94,12 @@ pub async fn fetch_new_endpoints(
         Some(i) if i.elapsed() < context.static_info_fetch_freq => None,
         _ => {
             tracing::debug!("Fetching static info");
-            *static_info_last_fetch = Some(time::Instant::now());
-            handle_error_into_option(client.get_static().await)
+            let static_info = handle_error_into_option(client.get_static().await);
+            // Only a successful fetch waits for the next refresh. A failed one retries next cycle.
+            if static_info.is_some() {
+                *static_info_last_fetch = Some(time::Instant::now());
+            }
+            static_info
         }
     };
 
@@ -187,21 +191,49 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
-    #[tokio::test]
-    async fn failed_game_fetch_does_not_try_to_fetch_picks() {
-        // Every fetch fails, because this folder does not exist
-        let client = Client::new_local(Some(String::from("does-not-exist"))).unwrap();
-        let context = crate::AppContext {
+    fn test_context() -> crate::AppContext {
+        crate::AppContext {
             league_id: 26952,
             team_ids: vec![138589],
             fetch_sleep_duration: Duration::from_secs(60),
             static_info_fetch_freq: Duration::from_secs(1800),
-        };
+        }
+    }
 
-        let update = fetch_new_endpoints(&client, context, &mut None).await;
+    #[tokio::test]
+    async fn failed_game_fetch_does_not_try_to_fetch_picks() {
+        // Every fetch fails, because this folder does not exist
+        let client = Client::new_local(Some(String::from("does-not-exist"))).unwrap();
+
+        let update = fetch_new_endpoints(&client, test_context(), &mut None).await;
 
         assert!(update.game.is_none());
         // A fallback to GW 1 would leave a failed entry for this team here
         assert!(update.teams_gws.is_empty());
+    }
+
+    #[tokio::test]
+    async fn failed_static_fetch_does_not_count_as_the_last_fetch() {
+        // Every fetch fails, because this folder does not exist
+        let client = Client::new_local(Some(String::from("does-not-exist"))).unwrap();
+        let mut last_fetch = None;
+
+        fetch_new_endpoints(&client, test_context(), &mut last_fetch).await;
+
+        assert!(last_fetch.is_none());
+    }
+
+    #[tokio::test]
+    async fn successful_static_fetch_counts_as_the_last_fetch() {
+        let api = format!(
+            "{}/tests/snapshots/2026-10-31-gw8-finished-gw/api",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let client = Client::new_local(Some(api)).unwrap();
+        let mut last_fetch = None;
+
+        fetch_new_endpoints(&client, test_context(), &mut last_fetch).await;
+
+        assert!(last_fetch.is_some());
     }
 }
