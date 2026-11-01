@@ -355,11 +355,11 @@ pub fn get_entry_id_from_team_id(endpoints: &FplEndpoints, team_id: u32) -> u32 
 }
 
 fn get_player_from_static(endpoints: &FplEndpoints, player_id: u32) -> &StaticElement {
-    let i = (player_id - 1) as usize;
     endpoints
         .static_info
         .elements
-        .get(i)
+        .iter()
+        .find(|element| element.id == player_id)
         .unwrap_or_else(|| panic!("Player Id {} does not exist in bootstrap-static", player_id))
 }
 
@@ -376,4 +376,25 @@ fn get_team_info_entry(endpoints: &FplEndpoints, team_id: u32) -> Option<&TeamIn
         .teams_infos
         .get(&team_id)
         .map(|val_res| &val_res.entry)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::Client;
+    use crate::{fetcher, initializer};
+
+    #[tokio::test]
+    async fn player_is_found_by_id_when_ids_have_gaps() {
+        let root = env!("CARGO_MANIFEST_DIR");
+        let api = format!("{root}/tests/snapshots/2026-10-31-gw8-finished-gw/api");
+        let client = Client::new_local(Some(api)).unwrap();
+        let context = initializer::initialize_app_context(&client, 26952).await;
+        let mut endpoints = fetcher::fetch_and_initialize_endpoints(&client, context).await;
+
+        // Removing the first player leaves a gap, as if FPL had removed a player
+        endpoints.static_info.elements.remove(0);
+
+        assert_eq!(get_player_full_name(&endpoints, 350), "Alisson Becker");
+    }
 }
