@@ -69,7 +69,6 @@ pub async fn fetch_new_endpoints(
     context: crate::AppContext,
     static_info_last_fetch: &mut Option<time::Instant>,
 ) -> FplEndpointsUpdate {
-    let mut gw = 1;
     let league_code = context.league_id;
     let teams = context.team_ids;
 
@@ -80,20 +79,14 @@ pub async fn fetch_new_endpoints(
     let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
     let (game, details): (Option<Game>, Option<Details>) = join!(game, details);
 
-    if let Some(game) = game.as_ref() {
-        match game.current_event {
-            Some(current_gw) => {
-                gw = current_gw;
-            }
-            None => {
-                tracing::error!("Did not find new GW in fetch, using GW: {}", gw);
-            }
-        }
+    // Without the current GW we don't know which live data and picks to fetch. Skipping them
+    // keeps the ones we already have.
+    let gw = game.as_ref().and_then(|game| game.current_event);
+    if gw.is_none() {
+        tracing::error!("Did not find the current GW in fetch, skipping live data and picks");
     }
 
     // Start http_calls
-    let live = client.get_gw_points_live(&gw);
-    let team_gws_res = client.get_multiple_teams_gw(&teams, &gw);
     let team_infos_res = client.get_multiple_teams_info(&teams);
 
     // Handle static because we don't need to update the endpoint too often
@@ -107,8 +100,14 @@ pub async fn fetch_new_endpoints(
     };
 
     // Handle results when returned
-    let live = handle_error_into_option(live.await);
-    let team_gws_res = team_gws_res.await;
+    let live = match gw {
+        Some(gw) => handle_error_into_option(client.get_gw_points_live(&gw).await),
+        None => None,
+    };
+    let team_gws_res = match gw {
+        Some(gw) => client.get_multiple_teams_gw(&teams, &gw).await,
+        None => HashMap::new(),
+    };
     let team_infos_res = team_infos_res.await;
 
     // Convert hashmaps to use options in finalized result
@@ -181,4 +180,28 @@ async fn fetch_details_with_retries(
         tracing::error!("Error fetching Details. \nDetails: {}", e);
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn failed_game_fetch_does_not_try_to_fetch_picks() {
+        // Every fetch fails, because this folder does not exist
+        let client = Client::new_local(Some(String::from("does-not-exist"))).unwrap();
+        let context = crate::AppContext {
+            league_id: 26952,
+            team_ids: vec![138589],
+            fetch_sleep_duration: Duration::from_secs(60),
+            static_info_fetch_freq: Duration::from_secs(1800),
+        };
+
+        let update = fetch_new_endpoints(&client, context, &mut None).await;
+
+        assert!(update.game.is_none());
+        // A fallback to GW 1 would leave a failed entry for this team here
+        assert!(update.teams_gws.is_empty());
+    }
 }
