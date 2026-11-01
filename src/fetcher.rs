@@ -73,8 +73,8 @@ pub async fn fetch_new_endpoints(
     let teams = context.team_ids;
 
     //let (game, details) = fetch_game_and_details_with_retries(client, &league_code).await;
-    let retries = 15;
-    let retry_delay_ms = 10;
+    let retries = 3;
+    let retry_delay_ms = 1000;
     let game = fetch_game_with_retries(client, retries, retry_delay_ms);
     let details = fetch_details_with_retries(client, retries, &league_code, retry_delay_ms);
     let (game, details): (Option<Game>, Option<Details>) = join!(game, details);
