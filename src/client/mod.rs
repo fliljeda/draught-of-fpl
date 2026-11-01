@@ -51,7 +51,7 @@ fn deserialize_endpoint_struct<'a, T>(s: &'a str) -> Result<T, ClientError>
 where
     T: de::Deserialize<'a>,
 {
-    serde_json::from_str(s).map_err(|e| ClientError::Reqwest(format!("Found Error: {}", e)))
+    serde_json::from_str(s).map_err(|e| ClientError::Json(format!("Found Error: {}", e)))
 }
 
 // Basic client methods
@@ -148,6 +148,8 @@ impl Client {
                 )))
             }
         };
+
+        verify_error_code(resp.status())?;
 
         let body = match resp.text().await {
             Ok(b) => b,
@@ -289,7 +291,6 @@ impl Client {
     }
 }
 
-#[allow(dead_code)]
 fn verify_error_code(code: reqwest::StatusCode) -> Result<(), ClientError> {
     match code.is_success() {
         true => Ok(()),
@@ -301,6 +302,25 @@ fn verify_error_code(code: reqwest::StatusCode) -> Result<(), ClientError> {
 mod tests {
     use super::*;
     use futures::join;
+
+    #[test]
+    fn success_status_is_ok() {
+        assert!(verify_error_code(reqwest::StatusCode::OK).is_ok());
+    }
+
+    #[test]
+    fn error_status_is_an_http_error() {
+        let result = verify_error_code(reqwest::StatusCode::FORBIDDEN);
+
+        assert!(matches!(result, Err(ClientError::Http(_))));
+    }
+
+    #[test]
+    fn invalid_json_is_a_json_error() {
+        let result = deserialize_endpoint_struct::<Game>("<html>Forbidden</html>");
+
+        assert!(matches!(result, Err(ClientError::Json(_))));
+    }
 
     #[tokio::test]
     #[ignore] //Expensive
