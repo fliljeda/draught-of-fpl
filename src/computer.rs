@@ -23,30 +23,49 @@ pub async fn league_table_computer(
             tokio::time::sleep(time::Duration::from_millis(sleep_ms)).await;
         }
 
-        let endpoints = match endpoints_lock.read() {
-            Ok(e) => (*e).clone(),
+        update_league_table(&lock, &endpoints_lock).await;
+    }
+}
+
+async fn update_league_table(
+    lock: &Arc<RwLock<LeagueTable>>,
+    endpoints_lock: &Arc<RwLock<FplEndpoints>>,
+) {
+    let endpoints = match endpoints_lock.read() {
+        Ok(e) => (*e).clone(),
+        Err(e) => {
+            tracing::error!(
+                "Could not grab read lock for endpoints in computer thread, {}",
+                e
+            );
+            return;
+        }
+    };
+
+    tracing::debug!("Computing new league table");
+    // Computing in its own task means a panic only fails this attempt. The previous table
+    // stays in place and the next attempt may succeed once the data has been refetched.
+    let new_table = match tokio::spawn(async move { compute_new_league_table(endpoints) }).await {
+        Ok(new_table) => new_table,
+        Err(e) => {
+            tracing::error!(
+                "Computing the league table failed, keeping the previous table: {}",
+                e
+            );
+            return;
+        }
+    };
+
+    if let Some(new_table) = new_table {
+        match lock.write() {
+            Ok(mut t) => {
+                tracing::trace!("Grabbed the league table lock");
+                *t = new_table;
+            }
             Err(e) => {
-                tracing::error!(
-                    "Could not grab read lock for endpoints in computer thread, {}",
-                    e
-                );
-                continue;
+                tracing::error!("Could not grab write lock for table: {}", e);
             }
         };
-
-        tracing::debug!("Computing new league table");
-        let new_table = compute_new_league_table(endpoints);
-        if let Some(new_table) = new_table {
-            match lock.write() {
-                Ok(mut t) => {
-                    tracing::trace!("Grabbed the league table lock");
-                    *t = new_table;
-                }
-                Err(e) => {
-                    tracing::error!("Could not grab write lock for table: {}", e);
-                }
-            };
-        }
     }
 }
 
@@ -486,5 +505,44 @@ fn calculate_play_status(players: &mut [TablePlayer]) {
         .filter(|p| p.play_status == PlayerPlayStatus::Unknown)
     {
         p.play_status = PlayerPlayStatus::Playing;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::Client;
+    use crate::{fetcher, initializer};
+
+    async fn load_endpoints(snapshot: &str) -> FplEndpoints {
+        let root = env!("CARGO_MANIFEST_DIR");
+        let api = format!("{root}/tests/snapshots/{snapshot}/api");
+        let client = Client::new_local(Some(api)).unwrap();
+        let context = initializer::initialize_app_context(&client, 26952).await;
+        fetcher::fetch_and_initialize_endpoints(&client, context).await
+    }
+
+    #[tokio::test]
+    async fn panic_while_computing_keeps_the_previous_table_and_the_next_attempt_works() {
+        let good_endpoints = load_endpoints("2026-10-31-gw8-finished-gw").await;
+        let table = compute_new_league_table(good_endpoints.clone()).unwrap();
+        let table_lock = Arc::new(RwLock::new(table));
+
+        // Players missing from bootstrap-static make computing panic
+        let mut broken_endpoints = good_endpoints.clone();
+        broken_endpoints.static_info.elements.clear();
+        let endpoints_lock = Arc::new(RwLock::new(broken_endpoints));
+
+        update_league_table(&table_lock, &endpoints_lock).await;
+        assert_eq!(table_lock.read().unwrap().name, "Test League");
+        assert_eq!(table_lock.read().unwrap().entries.len(), 6);
+
+        // The data is good again on the next fetch
+        let mut new_endpoints = good_endpoints;
+        new_endpoints.details.league.name = String::from("New name");
+        *endpoints_lock.write().unwrap() = new_endpoints;
+
+        update_league_table(&table_lock, &endpoints_lock).await;
+        assert_eq!(table_lock.read().unwrap().name, "New name");
     }
 }
